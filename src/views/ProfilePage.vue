@@ -31,44 +31,65 @@
     </div>
 
     <!-- 右侧面板：个人主页主体 -->
-    <div class="flex-1 overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm">
+    <div class="flex-1 overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm" style="overflow-x: hidden;">
       <!-- 顶部 Banner -->
-      <div class="profile-banner relative h-[180px] w-full overflow-hidden cursor-pointer sm:h-[200px]"
+      <div class="profile-banner group relative h-[180px] w-full overflow-hidden cursor-pointer sm:h-[200px]"
         @click="openBackgroundUpload">
-        <div class="absolute top-0 left-0 w-full h-full bg-cover bg-center"
+        <div class="profile-banner-bg absolute top-0 left-0 w-full h-full bg-cover bg-center"
           :style="{ backgroundImage: bannerBg }" />
         <div class="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" />
 
         <!-- 用户信息 -->
-        <div class="absolute bottom-0 left-0 right-0 px-6 pb-5 pt-10 sm:px-8">
-          <div class="flex items-end gap-4">
-            <div class="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-white/40 shadow-lg sm:h-16 sm:w-16">
+        <div class="absolute bottom-0 left-0 right-0 px-6 pb-5 pt-10 sm:px-8" style="z-index: 1;">
+          <div class="flex items-center gap-4">
+            <div class="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 border-white/40 shadow-lg sm:h-16 sm:w-16 cursor-pointer"
+              style="z-index: 30;"
+              @click.stop="openAvatarUpload"
+              @mouseenter="onAvatarMouseEnter"
+              @mouseleave="onAvatarMouseLeave">
               <img v-if="user?.avatar" :src="user.avatar" :alt="user.nickname" class="h-full w-full object-cover" />
               <div v-else class="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500/50 to-purple-500/50">
                 <span class="text-xl font-bold text-white/80">{{ (user?.nickname || '?').slice(0, 1) }}</span>
               </div>
+              <!-- 头像蒙版 -->
+              <div class="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity duration-300 hover:opacity-100">
+                <div class="flex flex-col items-center gap-1">
+                  <span class="text-[10px] font-medium text-white">更换头像</span>
+                </div>
+              </div>
             </div>
-            <div class="min-w-0 pb-0.5">
+            <div class="min-w-0 pb-1">
               <div class="flex items-center gap-2">
-                <h1 class="truncate text-base font-bold text-white drop-shadow sm:text-lg">
+                <h1 class="truncate text-base font-bold text-white drop-shadow text-xl">
                   {{ user?.nickname || '未登录' }}
                 </h1>
-                <span v-if="user?.role" class="shrink-0 rounded bg-amber-500/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                  {{ user.role }}
-                </span>
               </div>
-              <p class="mt-0.5 truncate text-xs text-white/60">
+              <p class="mt-0.5 truncate text-xs pt-1.5 text-white/60">
                 签名：{{ user?.bio || '这个家伙很懒，什么也没有写' }}
               </p>
             </div>
           </div>
-          <div class="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-            <span class="text-red-400">发帖 <b>{{ stats.posts }}</b></span>
-            <span class="text-white/70">分享 <b class="text-white">{{ stats.shares }}</b></span>
-            <span class="text-white/70">获赞 <b class="text-white">{{ stats.likes }}</b></span>
-            <span class="text-white/70">获赏 <b class="text-white">{{ stats.rewards }}</b></span>
-            <span class="text-white/70">关注 <b class="text-white">{{ stats.following }}</b></span>
+          <div class="mt-8 flex flex-wrap gap-x-4 gap-y-1 text-ms">
+            <span class="text-red-400">发帖 <b>{{ stats.posts }}</b></span>|
+            <span class="text-white/70">分享 <b class="text-white">{{ stats.shares }}</b></span>|
+            <span class="text-white/70">获赞 <b class="text-white">{{ stats.likes }}</b></span>|
+            <span class="text-white/70">获赏 <b class="text-white">{{ stats.rewards }}</b></span>|
+            <span class="text-white/70">关注 <b class="text-white">{{ stats.following }}</b></span>|
             <span class="text-white/70">粉丝 <b class="text-white">{{ stats.followers }}</b></span>
+          </div>
+        </div>
+
+        <!-- 背景蒙版：覆盖整个 banner，group-hover 触发，头像 hover 时隐藏 -->
+        <div class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity duration-300"
+          :class="isAvatarHovered ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'"
+          style="z-index: 10;">
+          <div class="flex flex-col items-center gap-2">
+            <svg class="h-8 w-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            <span class="text-sm font-medium text-white">更换背景</span>
           </div>
         </div>
       </div>
@@ -140,7 +161,7 @@
             <!-- PC 收藏：TiltedCard 网格，每页最多12张 -->
             <template v-if="favKind === 'pc'">
               <div v-if="pcFavItems.length > 0">
-                <div class="grid grid-cols-3 gap-4 max-[899px]:grid-cols-2 max-[899px]:gap-3">
+                <div class="grid grid-cols-4 gap-4 max-[899px]:grid-cols-2 max-[899px]:gap-3">
                   <div v-for="item in pcPagedItems" :key="item.id"
                     class="aspect-[4/3] w-full cursor-pointer overflow-visible rounded-2xl"
                     @click="goWallpaperDetail(item)">
@@ -206,7 +227,7 @@
 
             <!-- 手机收藏：瀑布流（内部滚动） -->
             <template v-else>
-              <div v-if="mobileFavItems.length > 0" class="profile-mobile-scroll -mx-4 -mb-4 overflow-y-auto sm:-mx-6 sm:-mb-6" style="max-height: 520px;">
+              <div v-if="mobileFavItems.length > 0" ref="mobileScrollRef" class="profile-mobile-scroll -mx-4 -mb-4 overflow-y-auto overflow-x-hidden sm:-mx-6 sm:-mb-6" style="max-height: 520px;">
                 <div class="px-4 py-2 sm:px-6">
                   <WallpaperMasonry
                     class="w-full"
@@ -216,6 +237,7 @@
                     :has-more="false"
                     :loading="false"
                     :duration="0.6"
+                    :scroll-target-ref="mobileScrollRef"
                     :stagger="0.05"
                     animate-from="bottom"
                     :scale-on-hover="true"
@@ -311,8 +333,20 @@
   <!-- 背景图上传裁剪弹窗 -->
   <ImageCropperModal
     :visible="backgroundModalVisible"
+    :loading="backgroundUploading"
     @close="closeBackgroundModal"
     @confirm="handleBackgroundUpload"
+  />
+
+  <!-- 头像上传裁剪弹窗 -->
+  <ImageCropperModal
+    :visible="avatarModalVisible"
+    :loading="avatarUploading"
+    :aspect-ratio="1"
+    title="上传头像"
+    fit-mode="cover"
+    @close="closeAvatarModal"
+    @confirm="handleAvatarUpload"
   />
 </template>
 
@@ -381,28 +415,71 @@ const activeFilter = ref<FilterKey>('recent')
 // ---- 收藏相关 ----
 type FavKind = 'pc' | 'mobile'
 const favKind = ref<FavKind>('pc')
+const mobileScrollRef = ref<HTMLElement | null>(null)
 
 // ---- 背景图上传 ----
 const backgroundModalVisible = ref(false)
+const backgroundUploading = ref(false)
 
 function openBackgroundUpload() {
   backgroundModalVisible.value = true
 }
 
 function closeBackgroundModal() {
+  if (backgroundUploading.value) return
   backgroundModalVisible.value = false
 }
 
-async function handleBackgroundUpload(base64: string) {
+async function handleBackgroundUpload(blob: Blob) {
   if (!authStore.isAuthenticated) return
-  
+
+  backgroundUploading.value = true
   try {
-    await authStore.updateProfile({ background: base64 })
+    await authStore.uploadBackground(blob)
   } catch {
     // 忽略错误
+  } finally {
+    backgroundUploading.value = false
   }
-  
+
   closeBackgroundModal()
+}
+
+// ---- 头像上传 ----
+const avatarModalVisible = ref(false)
+const avatarUploading = ref(false)
+const isAvatarHovered = ref(false)
+
+function onAvatarMouseEnter() {
+  isAvatarHovered.value = true
+}
+
+function onAvatarMouseLeave() {
+  isAvatarHovered.value = false
+}
+
+function openAvatarUpload() {
+  avatarModalVisible.value = true
+}
+
+function closeAvatarModal() {
+  if (avatarUploading.value) return
+  avatarModalVisible.value = false
+}
+
+async function handleAvatarUpload(blob: Blob) {
+  if (!authStore.isAuthenticated) return
+
+  avatarUploading.value = true
+  try {
+    await authStore.uploadAvatar(blob)
+  } catch {
+    // 忽略错误
+  } finally {
+    avatarUploading.value = false
+  }
+
+  closeAvatarModal()
 }
 
 // 进入个人主页时刷新用户信息（包含 collections），确保数据与后端一致
@@ -607,13 +684,8 @@ async function saveProfile() {
   z-index: 0;
 }
 
-.profile-banner > div:first-child {
+.profile-banner > .profile-banner-bg {
   z-index: -1;
-}
-
-.profile-banner > div:not(:first-child) {
-  position: relative;
-  z-index: 1;
 }
 
 .profile-tabs {

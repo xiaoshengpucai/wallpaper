@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="visible" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="handleClose">
+      <div v-if="visible" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="!isLoading && handleClose()">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-md" />
         <div
           class="relative w-full max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-gray-900/95 to-gray-800/95 shadow-2xl">
@@ -16,10 +16,11 @@
                   <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
               </div>
-              <span class="text-base font-semibold text-white">上传背景图</span>
+              <span class="text-base font-semibold text-white">{{ cropTitle }}</span>
             </div>
             <button type="button"
-              class="rounded-xl p-2 transition-all hover:bg-white/10 hover:scale-105 active:scale-95"
+              class="rounded-xl p-2 transition-all hover:bg-white/10 hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-transparent"
+              :disabled="isLoading"
               @click="handleClose">
               <svg class="h-5 w-5 text-white/60 transition-colors hover:text-white" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2">
@@ -53,9 +54,21 @@
 
             <!-- 裁剪区域 -->
             <div v-else class="flex flex-col gap-5">
-              <div ref="cropContainer" class="relative aspect-video overflow-hidden rounded-2xl bg-black shadow-lg" @mousedown="startDrag">
+              <div ref="cropContainer" class="relative overflow-hidden rounded-2xl bg-black shadow-lg"
+                :style="{ aspectRatio: `${containerAspectRatio}` }" :class="{ 'pointer-events-none': isLoading }"
+                @mousedown="startDrag">
                 <div class="absolute inset-0 overflow-hidden">
-                  <img :src="imageSrc" class="absolute" :style="getImageStyle()" />
+                  <img :src="imageSrc" class="absolute crop-image" :style="getImageStyle()" />
+                </div>
+                <!-- 上传中遮罩 -->
+                <div v-if="isLoading" class="absolute inset-0 z-20 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                  <div class="flex flex-col items-center gap-3">
+                    <svg class="h-8 w-8 animate-spin text-blue-400" viewBox="0 0 24 24" fill="none">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    <span class="text-sm text-white/80">上传中...</span>
+                  </div>
                 </div>
                 <!-- 裁剪框遮罩 -->
                 <div class="absolute inset-0 pointer-events-none">
@@ -91,7 +104,8 @@
               <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-2 flex-shrink-0">
                   <button type="button"
-                    class="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/20 px-3 py-2 text-xs sm:text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white hover:shadow-lg hover:shadow-white/5"
+                    class="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/20 px-3 py-2 text-xs sm:text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white hover:shadow-lg hover:shadow-white/5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-white/70 disabled:hover:shadow-none"
+                    :disabled="isLoading"
                     @click="rotate(-90)">
                     <svg t="1784640095854" class="icon" viewBox="0 0 1024 1024" version="1.1"
                       xmlns="http://www.w3.org/2000/svg" p-id="5399" width="15" height="15">
@@ -102,7 +116,8 @@
                     左旋转
                   </button>
                   <button type="button"
-                    class="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/20 px-3 py-2 text-xs sm:text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white hover:shadow-lg hover:shadow-white/5"
+                    class="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/20 px-3 py-2 text-xs sm:text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white hover:shadow-lg hover:shadow-white/5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-white/70 disabled:hover:shadow-none"
+                    :disabled="isLoading"
                     @click="rotate(90)">
                     <svg t="1784640183464" class="icon" viewBox="0 0 1024 1024" version="1.1"
                       xmlns="http://www.w3.org/2000/svg" p-id="9003" width="15" height="15">
@@ -115,24 +130,27 @@
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                   <button type="button"
-                    class="rounded-xl  px-2.5 py-2 text-white/60 transition-all hover:bg-white/10 hover:text-white"
+                    class="rounded-xl px-2.5 py-2 text-white/60 transition-all hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    :disabled="isLoading"
                     @click="scaleDown">
                     -
                   </button>
                   <div class="flex items-center gap-2 px-1">
                     <span class="text-xs text-white/40 w-8">{{ Math.round(scale * 100) }}%</span>
-                    <input type="range" v-model="scale" min="1" max="3" step="0.1"
-                      class="w-24 sm:w-32 md:w-40 h-2 rounded-full appearance-none bg-white/10 accent-blue-500" />
+                    <input type="range" v-model="scale" min="1" max="3" step="0.1" :disabled="isLoading"
+                      class="w-24 sm:w-32 md:w-40 h-2 rounded-full appearance-none bg-white/10 accent-blue-500 disabled:opacity-40 disabled:cursor-not-allowed" />
                   </div>
                   <button type="button"
-                    class="rounded-xl  px-2.5 py-2 text-white/60 transition-all hover:bg-white/10 hover:text-white"
+                    class="rounded-xl px-2.5 py-2 text-white/60 transition-all hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    :disabled="isLoading"
                     @click="scaleUp">
                     +
                   </button>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                   <button type="button"
-                    class="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/20 px-3 py-2 text-xs sm:text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white"
+                    class="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/20 px-3 py-2 text-xs sm:text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-white/70"
+                    :disabled="isLoading"
                     @click="resetImage">
                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
@@ -143,12 +161,18 @@
                     重置
                   </button>
                   <button type="button"
-                    class="flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2 text-xs sm:text-sm font-medium text-white shadow-lg shadow-blue-500/30 transition-all hover:from-blue-600 hover:to-blue-700 hover:shadow-xl hover:shadow-blue-500/40 hover:scale-105 active:scale-95"
+                    class="flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2 text-xs sm:text-sm font-medium text-white shadow-lg shadow-blue-500/30 transition-all hover:from-blue-600 hover:to-blue-700 hover:shadow-xl hover:shadow-blue-500/40 hover:scale-105 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:from-blue-500 disabled:hover:to-blue-600"
+                    :disabled="isLoading"
                     @click="handleConfirm">
-                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <!-- loading 时显示 spinner，否则显示勾选图标 -->
+                    <svg v-if="isLoading" class="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    <svg v-else class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
-                    确认上传
+                    {{ isLoading ? '上传中' : '确认上传' }}
                   </button>
                 </div>
               </div>
@@ -161,17 +185,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onUnmounted } from 'vue'
+import { ref, watch, onUnmounted, computed, nextTick } from 'vue'
 
 const props = defineProps<{
   visible: boolean
   aspectRatio?: number
+  title?: string
+  fitMode?: 'width' | 'cover'
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'confirm', base64: string): void
+  (e: 'confirm', blob: Blob): void
 }>()
+
+const isLoading = computed(() => !!props.loading)
 
 const imageSrc = ref('')
 const position = ref({ x: 0, y: 0 })
@@ -182,6 +211,36 @@ const dragStart = ref({ x: 0, y: 0 })
 const cropContainer = ref<HTMLDivElement | null>(null)
 const imageSize = ref({ width: 0, height: 0 })
 
+const cropTitle = computed(() => props.title || '上传背景图')
+
+const containerAspectRatio = computed(() => props.aspectRatio || 16 / 9)
+
+watch(() => props.visible, (newVal) => {
+  if (newVal) {
+    nextTick(() => {
+      if (imageSize.value.width > 0) {
+        resetImage()
+      }
+    })
+  }
+})
+
+watch(() => props.fitMode, () => {
+  if (props.visible && imageSize.value.width > 0) {
+    nextTick(() => {
+      resetImage()
+    })
+  }
+})
+
+watch(imageSize, () => {
+  if (props.visible && imageSize.value.width > 0) {
+    nextTick(() => {
+      resetImage()
+    })
+  }
+})
+
 function handleFileSelect(event: Event) {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
@@ -191,73 +250,60 @@ function handleFileSelect(event: Event) {
 }
 
 function loadImage(file: File) {
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    compressImage(e.target?.result as string, (compressedSrc) => {
-      imageSrc.value = compressedSrc
-      const img = new Image()
-      img.onload = () => {
-        imageSize.value = { width: img.width, height: img.height }
-        resetImage()
-      }
-      img.src = compressedSrc
-    })
-  }
-  reader.readAsDataURL(file)
-}
-
-function compressImage(src: string, callback: (compressedSrc: string) => void) {
+  // 直接用 object URL 加载原图，不再压缩
+  // （已改用 Blob 上传，无需为 base64 卡顿做预压缩）
+  const url = URL.createObjectURL(file)
+  imageSrc.value = url
   const img = new Image()
   img.onload = () => {
-    const maxWidth = 1920
-    const maxHeight = 1080
-    let width = img.width
-    let height = img.height
-
-    if (width > maxWidth || height > maxHeight) {
-      const ratio = Math.min(maxWidth / width, maxHeight / height)
-      width = Math.round(width * ratio)
-      height = Math.round(height * ratio)
-    }
-
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-
-    const ctx = canvas.getContext('2d')
-    if (!ctx) {
-      callback(src)
-      return
-    }
-
-    ctx.imageSmoothingEnabled = true
-    ctx.imageSmoothingQuality = 'high'
-    ctx.drawImage(img, 0, 0, width, height)
-
-    const compressedSrc = canvas.toDataURL('image/jpeg', 0.7)
-    callback(compressedSrc)
+    imageSize.value = { width: img.width, height: img.height }
+    resetImage()
   }
-  img.onerror = () => {
-    callback(src)
+  img.src = url
+}
+
+function getBaseDisplaySize() {
+  if (!imageSize.value.width || !cropContainer.value) {
+    return { width: 0, height: 0 }
   }
-  img.src = src
+
+  const containerRect = cropContainer.value.getBoundingClientRect()
+  const containerWidth = containerRect.width
+  const containerHeight = containerRect.height
+
+  const imgRatio = imageSize.value.width / imageSize.value.height
+  const containerRatio = containerWidth / containerHeight
+
+  const currentFitMode = props.fitMode || 'width'
+
+  let displayWidth: number
+  let displayHeight: number
+
+  if (currentFitMode === 'cover') {
+    if (imgRatio > containerRatio) {
+      displayHeight = containerHeight
+      displayWidth = containerHeight * imgRatio
+    } else {
+      displayWidth = containerWidth
+      displayHeight = containerWidth / imgRatio
+    }
+  } else {
+    displayWidth = containerWidth
+    displayHeight = containerWidth / imgRatio
+  }
+
+  return { width: displayWidth, height: displayHeight }
 }
 
 function getImageStyle() {
-  if (!imageSize.value.width || !cropContainer.value) {
+  const { width: displayWidth, height: displayHeight } = getBaseDisplaySize()
+
+  if (displayWidth === 0) {
     return {
       transform: `translate(${position.value.x}px, ${position.value.y}px) scale(${scale.value}) rotate(${rotation.value}deg)`,
       transformOrigin: 'center center'
     }
   }
-
-  const containerRect = cropContainer.value.getBoundingClientRect()
-  const containerWidth = containerRect.width
-
-  const imgRatio = imageSize.value.width / imageSize.value.height
-
-  const displayWidth = containerWidth
-  const displayHeight = containerWidth / imgRatio
 
   return {
     width: `${displayWidth}px`,
@@ -299,10 +345,7 @@ function onDrag(event: MouseEvent) {
     const containerWidth = containerRect.width
     const containerHeight = containerRect.height
 
-    const imgRatio = imageSize.value.width / imageSize.value.height
-
-    const displayWidth = containerWidth
-    const displayHeight = containerWidth / imgRatio
+    const { width: displayWidth, height: displayHeight } = getBaseDisplaySize()
 
     const scaledWidth = displayWidth * scale.value
     const scaledHeight = displayHeight * scale.value
@@ -355,16 +398,22 @@ function handleConfirm() {
 
     const cropMargin = 24
 
-    const outputWidth = containerWidth - cropMargin * 2
-    const outputHeight = containerHeight - cropMargin * 2
+    // 裁剪框在屏幕坐标系中的尺寸（CSS 像素）
+    const cropBoxWidth = containerWidth - cropMargin * 2
+    const cropBoxHeight = containerHeight - cropMargin * 2
 
-    const imgRatio = img.width / img.height
-
-    const displayWidth = containerWidth
-    const displayHeight = containerWidth / imgRatio
+    const { width: displayWidth, height: displayHeight } = getBaseDisplaySize()
 
     const scaledWidth = displayWidth * scale.value
     const scaledHeight = displayHeight * scale.value
+
+    // 关键：按原图分辨率输出，避免用屏幕 CSS 像素导致缩小模糊
+    // 原图到基础显示尺寸的比例（displayWidth 是按宽度铺满容器的基准尺寸）
+    const sourceScale = img.width / displayWidth
+
+    // 输出 canvas 用原图分辨率（裁剪框对应的原图像素）
+    const outputWidth = Math.round(cropBoxWidth * sourceScale)
+    const outputHeight = Math.round(cropBoxHeight * sourceScale)
 
     const radians = (rotation.value * Math.PI) / 180
 
@@ -375,25 +424,44 @@ function handleConfirm() {
     outputCanvas.width = outputWidth
     outputCanvas.height = outputHeight
 
+    // 高质量插值
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
+
     ctx.save()
+    // 所有坐标按 sourceScale 放大到原图分辨率
     ctx.translate(outputWidth / 2, outputHeight / 2)
     ctx.rotate(radians)
 
-    const drawX = -scaledWidth / 2 + position.value.x
-    const drawY = -scaledHeight / 2 + position.value.y
+    const drawX = (-scaledWidth / 2 + position.value.x) * sourceScale
+    const drawY = (-scaledHeight / 2 + position.value.y) * sourceScale
+    const drawW = scaledWidth * sourceScale
+    const drawH = scaledHeight * sourceScale
 
-    ctx.drawImage(img, drawX, drawY, scaledWidth, scaledHeight)
+    ctx.drawImage(img, drawX, drawY, drawW, drawH)
 
     ctx.restore()
 
-    const base64 = outputCanvas.toDataURL('image/jpeg', 0.85)
-    emit('confirm', base64)
+    // 用 toBlob 输出二进制，质量 0.92 保证清晰度
+    outputCanvas.toBlob(
+      (blob) => {
+        if (blob) {
+          emit('confirm', blob)
+        }
+      },
+      'image/jpeg',
+      0.92
+    )
   }
   img.src = imageSrc.value
 }
 
 watch(() => props.visible, (val) => {
   if (!val) {
+    // 清理 object URL 避免内存泄漏
+    if (imageSrc.value.startsWith('blob:')) {
+      URL.revokeObjectURL(imageSrc.value)
+    }
     imageSrc.value = ''
     resetImage()
     stopDrag()
@@ -401,6 +469,9 @@ watch(() => props.visible, (val) => {
 })
 
 onUnmounted(() => {
+  if (imageSrc.value.startsWith('blob:')) {
+    URL.revokeObjectURL(imageSrc.value)
+  }
   stopDrag()
 })
 </script>
@@ -446,5 +517,10 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer;
   border: 2px solid white;
   box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+}
+
+:deep(.crop-image) {
+  max-width: none !important;
+  max-height: none !important;
 }
 </style>

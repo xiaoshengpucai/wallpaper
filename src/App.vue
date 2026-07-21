@@ -14,126 +14,128 @@
     :data-theme="appThemeLight ? 'light' : 'dark'">
     <TopProgress :width="progressWidth" :visible="progressVisible" />
 
-    <header class="relative z-40 min-w-0 pt-[20px] font-xingkai max-[899px]:px-3 max-[899px]:pt-4">
-      <div
-        class="mx-auto flex w-[90%] max-w-full min-w-0 items-center justify-between gap-4 max-[899px]:w-full max-[899px]:flex-col max-[899px]:items-stretch max-[899px]:gap-3 nav:flex-row">
-        <!-- 移动端首行：品牌 + 登录 -->
-        <div class="flex w-full min-w-0 max-w-full items-center justify-between gap-2 nav:hidden">
-          <div class="min-w-0 max-w-[calc(100%-3.25rem)] shrink overflow-hidden">
-            <GlitchText children="凉云图集" :speed="0.5" :enable-shadows="true" :enable-on-hover="true"
-              :light-theme="appThemeLight" />
+    <div :class="{ 'header-placeholder': isHeaderFixed }" :style="{ height: isHeaderFixed ? `${headerHeight}px` : undefined }">
+      <header ref="headerRef" class="relative z-40 min-w-0 pt-[20px] font-xingkai max-[899px]:px-3 max-[899px]:pt-4 transition-all duration-300"
+        :class="{ 'fixed-header': isHeaderFixed }">
+        <div
+          class="mx-auto flex w-[90%] max-w-full min-w-0 items-center justify-between gap-4 max-[899px]:w-full max-[899px]:flex-col max-[899px]:items-stretch max-[899px]:gap-3 nav:flex-row">
+          <!-- 移动端首行：品牌 + 登录 -->
+          <div class="flex w-full min-w-0 max-w-full items-center justify-between gap-2 nav:hidden">
+            <div class="min-w-0 max-w-[calc(100%-3.25rem)] shrink overflow-hidden">
+              <GlitchText children="凉云图集" :speed="0.5" :enable-shadows="true" :enable-on-hover="true"
+                :light-theme="appThemeLight" />
+            </div>
+
+            <div ref="loginWrapRef" class="relative">
+              <button type="button" @click.stop="toggleLoginPopover"
+                class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border bg-white/5 shadow-[0_8px_24px_rgba(0,0,0,0.38)] backdrop-blur cursor-pointer transition-transform hover:scale-105 active:scale-95"
+                :class="appThemeLight
+                  ? 'border-slate-400/55 bg-white/75'
+                  : 'border-white/55'
+                  ">
+                <template v-if="authInitialized && authStore.user">
+                  <div class="relative h-15 w-15 overflow-hidden rounded-xl border-2 border-white/30">
+                    <img v-if="authStore.user?.avatar" :src="authStore.user.avatar" :alt="authStore.user.nickname"
+                      class="h-full w-full object-cover" />
+                    <div v-else
+                      class="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500/30 to-purple-500/30">
+                      <span class="text-lg font-bold text-white/80">{{ (authStore.user?.nickname || '').slice(0, 1)
+                      }}</span>
+                    </div>
+                  </div>
+                </template>
+                <template v-else>
+                  <div
+                    class="grid h-10 w-10 place-items-center rounded-md bg-indigo-500/20 text-xs font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,0.35)]"
+                    :style="{ transform: 'rotate(-12deg)' }">
+                    <span>{{ authInitialized ? '登录' : '...' }}</span>
+                  </div>
+                </template>
+              </button>
+
+              <!-- 移动端弹出框 -->
+              <div v-if="loginPopoverVisible" ref="mobileLoginPopoverRef"
+                class="pointer-events-auto absolute right-0 top-full z-50 w-[200px]"
+                style="margin-top: 8px; font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;">
+                <LoginPanel :is-authenticated="authInitialized && authStore.isAuthenticated" :user="authStore.user"
+                  :is-mobile="true" @wechat-login="handleWechatLogin" @phone-login="openLoginModal"
+                  @personal-center="handlePersonalCenter" @logout="handleLogout" />
+              </div>
+            </div>
           </div>
 
-          <div ref="loginWrapRef" class="relative">
-            <button type="button" @click.stop="toggleLoginPopover"
-              class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border bg-white/5 shadow-[0_8px_24px_rgba(0,0,0,0.38)] backdrop-blur cursor-pointer transition-transform hover:scale-105 active:scale-95"
-              :class="appThemeLight
-                ? 'border-slate-400/55 bg-white/75'
-                : 'border-white/55'
-                ">
-              <template v-if="authInitialized && authStore.user">
-                <div class="relative h-15 w-15 overflow-hidden rounded-xl border-2 border-white/30">
-                  <img v-if="authStore.user?.avatar" :src="authStore.user.avatar" :alt="authStore.user.nickname"
-                    class="h-full w-full object-cover" />
-                  <div v-else
-                    class="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500/30 to-purple-500/30">
-                    <span class="text-lg font-bold text-white/80">{{ (authStore.user?.nickname || '').slice(0, 1)
-                    }}</span>
+          <!-- 移动端首行（桌面端）：品牌 -->
+          <div class="hidden min-w-0 max-w-none nav:block">
+            <div class="min-w-0 max-w-none shrink overflow-hidden">
+              <GlitchText children="凉云图集" :speed="0.5" :enable-shadows="true" :enable-on-hover="true"
+                :light-theme="appThemeLight" />
+            </div>
+          </div>
+
+          <!-- 导航：桌面中间条；移动端第二行全宽胶囊 -->
+          <div
+            class="nav-shell relative flex w-full min-w-0 max-w-full items-center overflow-hidden rounded-full border bg-transparent px-1.5 py-1.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+            :class="appThemeLight
+              ? 'border-slate-400/40 text-slate-700'
+              : 'border-white/10 text-slate-200'
+              ">
+            <GooeyNav :items="navItems" :animation-time="600" :particle-count="15" :particle-distances="[90, 10]"
+              :particle-r="100" :time-variance="300" :colors="[1, 2, 3, 1, 2, 3, 1, 4]"
+              :initial-active-index="activeIndex" :light-theme="appThemeLight" @select="onNavSelect"
+              @theme="onAppTheme" />
+          </div>
+
+          <!-- 右侧（>=900 显示） -->
+          <div class="hidden shrink-0 w-[150px] items-center gap-3 nav:flex flex-col items-center">
+            <!-- 未登录：登录按钮 / 已登录：头像 -->
+            <div ref="loginWrapRef"
+              class="group relative z-50 transition-transform duration-200 ease-out login-edge-shift"
+              @mouseleave="closeLoginPopover">
+              <button type="button" @mouseenter="openLoginPopover"
+                class="grid h-20 w-20 place-items-center rounded-2xl border border-white/60 bg-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur cursor-pointer transition-transform hover:scale-105 active:scale-95">
+                <template v-if="authInitialized && authStore.user">
+                  <div class="relative h-15 w-15 overflow-hidden rounded-xl border-2 border-white/30">
+                    <img v-if="authStore.user?.avatar" :src="authStore.user.avatar" :alt="authStore.user.nickname"
+                      class="h-full w-full object-cover" />
+                    <div v-else
+                      class="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500/30 to-purple-500/30">
+                      <span class="text-lg font-bold text-white/80">{{ (authStore.user?.nickname || '').slice(0, 1)
+                      }}</span>
+                    </div>
+                  </div>
+                </template>
+                <template v-else>
+                  <div
+                    class="grid h-10 w-10 place-items-center rounded-md bg-indigo-500/20 text-xs font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,0.35)]"
+                    :style="{ transform: 'rotate(-12deg)' }">
+                    <span>{{ authInitialized ? '登录' : '...' }}</span>
+                  </div>
+                </template>
+              </button>
+
+              <!-- 桌面端弹出框 -->
+              <!-- 桌面端弹出框 -->
+              <Transition name="popover">
+                <div v-if="loginPopoverVisible" ref="loginPopoverRef"
+                  class="z-[-1] pointer-events-auto absolute left-1/2 -translate-x-1/2 top-full origin-top"
+                  style="top: calc(100% - 20px); font-family: 'Microsoft YaHei', '微软雅黑', sans-serif; font-weight: bold;">
+                  <div
+                    class="rounded-3xl border border-white/15 bg-black/10 w-[200px] h-[200px] shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-sm">
+                    <LoginPanel :is-authenticated="authInitialized && authStore.isAuthenticated" :user="authStore.user"
+                      :is-mobile="false" @wechat-login="handleWechatLogin" @phone-login="openLoginModal"
+                      @personal-center="handlePersonalCenter" @logout="handleLogout" />
                   </div>
                 </div>
-              </template>
-              <template v-else>
-                <div
-                  class="grid h-10 w-10 place-items-center rounded-md bg-indigo-500/20 text-xs font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,0.35)]"
-                  :style="{ transform: 'rotate(-12deg)' }">
-                  <span>{{ authInitialized ? '登录' : '...' }}</span>
-                </div>
-              </template>
-            </button>
-
-            <!-- 移动端弹出框 -->
-            <div v-if="loginPopoverVisible" ref="mobileLoginPopoverRef"
-              class="pointer-events-auto absolute right-0 top-full z-50 w-[200px]"
-              style="margin-top: 8px; font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;">
-              <LoginPanel :is-authenticated="authInitialized && authStore.isAuthenticated" :user="authStore.user"
-                :is-mobile="true" @wechat-login="handleWechatLogin" @phone-login="openLoginModal"
-                @personal-center="handlePersonalCenter" @logout="handleLogout" />
+              </Transition>
             </div>
           </div>
         </div>
-
-        <!-- 移动端首行（桌面端）：品牌 -->
-        <div class="hidden min-w-0 max-w-none nav:block">
-          <div class="min-w-0 max-w-none shrink overflow-hidden">
-            <GlitchText children="凉云图集" :speed="0.5" :enable-shadows="true" :enable-on-hover="true"
-              :light-theme="appThemeLight" />
-          </div>
-        </div>
-
-        <!-- 导航：桌面中间条；移动端第二行全宽胶囊 -->
-        <div
-          class="nav-shell relative flex w-full min-w-0 max-w-full items-center overflow-hidden rounded-full border bg-transparent px-1.5 py-1.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
-          :class="appThemeLight
-            ? 'border-slate-400/40 text-slate-700'
-            : 'border-white/10 text-slate-200'
-            ">
-          <GooeyNav :items="navItems" :animation-time="600" :particle-count="15" :particle-distances="[90, 10]"
-            :particle-r="100" :time-variance="300" :colors="[1, 2, 3, 1, 2, 3, 1, 4]"
-            :initial-active-index="activeIndex" :light-theme="appThemeLight" @select="onNavSelect"
-            @theme="onAppTheme" />
-        </div>
-
-        <!-- 右侧（>=900 显示） -->
-        <div class="hidden shrink-0 w-[150px] items-center gap-3 nav:flex flex-col items-center">
-          <!-- 未登录：登录按钮 / 已登录：头像 -->
-          <div ref="loginWrapRef"
-            class="group relative z-50 transition-transform duration-200 ease-out login-edge-shift"
-            @mouseleave="closeLoginPopover">
-            <button type="button" @mouseenter="openLoginPopover"
-              class="grid h-20 w-20 place-items-center rounded-2xl border border-white/60 bg-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur cursor-pointer transition-transform hover:scale-105 active:scale-95">
-              <template v-if="authInitialized && authStore.user">
-                <div class="relative h-15 w-15 overflow-hidden rounded-xl border-2 border-white/30">
-                  <img v-if="authStore.user?.avatar" :src="authStore.user.avatar" :alt="authStore.user.nickname"
-                    class="h-full w-full object-cover" />
-                  <div v-else
-                    class="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500/30 to-purple-500/30">
-                    <span class="text-lg font-bold text-white/80">{{ (authStore.user?.nickname || '').slice(0, 1)
-                    }}</span>
-                  </div>
-                </div>
-              </template>
-              <template v-else>
-                <div
-                  class="grid h-10 w-10 place-items-center rounded-md bg-indigo-500/20 text-xs font-semibold text-white shadow-[0_6px_14px_rgba(0,0,0,0.35)]"
-                  :style="{ transform: 'rotate(-12deg)' }">
-                  <span>{{ authInitialized ? '登录' : '...' }}</span>
-                </div>
-              </template>
-            </button>
-
-            <!-- 桌面端弹出框 -->
-            <!-- 桌面端弹出框 -->
-            <Transition name="popover">
-              <div v-if="loginPopoverVisible" ref="loginPopoverRef"
-                class="z-[-1] pointer-events-auto absolute left-1/2 -translate-x-1/2 top-full origin-top"
-                style="top: calc(100% - 20px); font-family: 'Microsoft YaHei', '微软雅黑', sans-serif; font-weight: bold;">
-                <div
-                  class="rounded-3xl border border-white/15 bg-black/10 w-[200px] h-[200px] shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-sm">
-                  <LoginPanel :is-authenticated="authInitialized && authStore.isAuthenticated" :user="authStore.user"
-                    :is-mobile="false" @wechat-login="handleWechatLogin" @phone-login="openLoginModal"
-                    @personal-center="handlePersonalCenter" @logout="handleLogout" />
-                </div>
-              </div>
-            </Transition>
-          </div>
-        </div>
-      </div>
-    </header>
+      </header>
+    </div>
 
     <!-- 列表 / 首页等：固定宽度比例与内边距 -->
     <main v-if="!isWallpaperDetailRoute"
-      class="app-main-site mx-auto min-w-0 max-w-[100vw] px-4 py-10 max-[899px]:max-w-full max-[899px]:px-2 max-[899px]:py-6"
-      :class="route.path.startsWith('/mobile') ? 'w-[95%]' : 'w-[90%] max-[899px]:w-full'">
+      class="app-main-site mx-auto min-w-0 max-w-[100vw] px-4 py-10 max-[899px]:max-w-full max-[899px]:px-2 max-[899px]:py-6">
       <RouterView />
     </main>
 
@@ -230,6 +232,9 @@ const loginEdgeShiftPx = ref(0)
 const loginPopoverRef = ref<HTMLElement | null>(null)
 const mobileLoginPopoverRef = ref<HTMLElement | null>(null)
 const loginModalVisible = ref(false)
+const isHeaderFixed = ref(false)
+const headerRef = ref<HTMLElement | null>(null)
+const headerHeight = ref(0)
 
 const openLoginPopover = () => {
   loginPopoverVisible.value = true
@@ -270,12 +275,27 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 }
 
+const handleScroll = () => {
+  isHeaderFixed.value = window.scrollY > headerHeight.value
+}
+
+const updateHeaderHeight = () => {
+  if (headerRef.value) {
+    headerHeight.value = headerRef.value.getBoundingClientRect().height
+  }
+}
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  window.addEventListener('scroll', handleScroll, { passive: true })
+  window.addEventListener('resize', updateHeaderHeight, { passive: true })
+  updateHeaderHeight()
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('resize', updateHeaderHeight)
 })
 
 const tabs = [
@@ -471,5 +491,34 @@ const progressVisible = computed(() => progress.state.visible.value)
   .app-main-wallpaper-detail {
     padding: 1.25rem 1rem 2.5rem;
   }
+}
+
+.fixed-header {
+  position: fixed;
+  top: -100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background-color: rgba(57, 57, 57, 0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 10px 0 10px 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  animation: headerSlideDown 0.3s ease-out forwards;
+}
+
+@keyframes headerSlideDown {
+  from {
+    top: -100%;
+    opacity: 0;
+  }
+  to {
+    top: 0;
+    opacity: 1;
+  }
+}
+
+[data-theme="light"] .fixed-header {
+  background-color: rgba(255, 255, 255, 0.95);
 }
 </style>

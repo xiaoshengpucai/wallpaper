@@ -1,5 +1,6 @@
 import { http } from './http'
 
+import { tokenStorage } from '../utils/tokenStorage'
 import type { AuthUser } from '../stores/auth'
 
 export type AuthResponse = {
@@ -93,5 +94,53 @@ export const authApi = {
     }
 
     return data
+  },
+
+  /**
+   * 上传图片文件（二进制），返回图片访问 URL。
+   * 走 multipart/form-data，不经 JSON，避免 base64 撑大请求体。
+   * @param file 二进制图片数据
+   * @param type 图片用途，后端可据此分目录存储
+   * @returns 图片 URL
+   */
+  async uploadImage(file: Blob, type: 'avatar' | 'background'): Promise<string> {
+    const formData = new FormData()
+    formData.append('file', file, `${type}.jpg`)
+    formData.append('type', type)
+
+    const token = tokenStorage.get()
+    const baseURL = import.meta.env.VITE_API_BASE_URL ?? ''
+
+    const res = await fetch(`${baseURL}/upload/image`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      // 注意：不要手动设置 Content-Type，浏览器会自动带 boundary
+      body: formData,
+    })
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      throw new Error(text || `上传失败 (${res.status})`)
+    }
+
+    const json = await res.json()
+    if (isApiResponse(json)) {
+      if (json.code !== 0 && json.code !== 200) {
+        throw new Error(json.msg || '上传失败')
+      }
+      const inner = json.data as Record<string, unknown>
+      // 后端可能返回 { url } 或 { url, ... }
+      if (inner && typeof inner === 'object' && 'url' in inner) {
+        return inner.url as string
+      }
+      return json.data as unknown as string
+    }
+
+    // 兼容直接返回 { url: "..." }
+    if (json && typeof json === 'object' && 'url' in json) {
+      return (json as { url: string }).url
+    }
+
+    throw new Error('上传响应格式异常')
   },
 }

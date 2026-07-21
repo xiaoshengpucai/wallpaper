@@ -246,5 +246,24 @@ export const useAuthStore = defineStore('auth', {
         }
       }
     },
+
+    /**
+     * 上传头像：先上传二进制图片拿 URL，再用 URL 更新用户资料。
+     * 避免 base64 撑大 JSON 请求体导致卡顿。
+     */
+    async uploadAvatar(file: Blob) {
+      const url = await authApi.uploadImage(file, 'avatar')
+      await this.updateProfile({ avatar: url })
+      return url
+    },
+
+    /**
+     * 上传背景图：先上传二进制图片拿 URL，再用 URL 更新用户资料。
+     */
+    async uploadBackground(file: Blob) {
+      const url = await authApi.uploadImage(file, 'background')
+      await this.updateProfile({ background: url })
+      return url
+    },
   },
 })

@@ -4,7 +4,7 @@
     class="wallpaper-masonry-scroll w-full min-h-0"
     :class="[
       lightTheme ? 'text-slate-800' : 'text-white',
-      pageScroll ? '' : 'overflow-y-auto overscroll-contain',
+      pageScroll || scrollTargetRef ? '' : 'overflow-y-auto overscroll-contain',
     ]"
     @scroll.passive="onContainerScroll"
   >
@@ -106,6 +106,11 @@ const props = withDefaults(
      * 虚拟列表与触底加载均相对视口计算。
      */
     pageScroll?: boolean
+    /**
+     * 外部滚动容器引用。传入后，组件不创建内部滚动条，而是监听外部容器的滚动事件。
+     * 用于嵌套滚动场景（如个人主页收藏标签页）。
+     */
+    scrollTargetRef?: HTMLElement | null
   }>(),
   {
     lightTheme: false,
@@ -124,6 +129,7 @@ const props = withDefaults(
     fixedColumns: undefined,
     measureWrapClass: 'max-w-5xl px-2 sm:px-3',
     pageScroll: false,
+    scrollTargetRef: null,
   },
 )
 
@@ -179,6 +185,10 @@ function updateScrollMetrics() {
     const rect = el.getBoundingClientRect()
     scrollTop.value = -rect.top
     viewportHeight.value = window.innerHeight
+  } else if (props.scrollTargetRef) {
+    const target = props.scrollTargetRef
+    scrollTop.value = target.scrollTop
+    viewportHeight.value = target.clientHeight
   } else {
     const root = scrollRootRef.value
     if (!root) return
@@ -411,7 +421,14 @@ function onImgLoad(id: string | number, ev: Event) {
 function setupIntersection() {
   const target = sentinelRef.value
   if (!target) return
-  const root = props.pageScroll ? null : scrollRootRef.value
+  let root: HTMLElement | null = null
+  if (props.pageScroll) {
+    root = null
+  } else if (props.scrollTargetRef) {
+    root = props.scrollTargetRef
+  } else {
+    root = scrollRootRef.value
+  }
   if (!props.pageScroll && !root) return
   intersectionObserver?.disconnect()
   const ioOpts: IntersectionObserverInit = { rootMargin: '480px 0px', threshold: 0 }
@@ -475,6 +492,15 @@ onMounted(() => {
       cancelWinResize()
     }
     scheduleScrollMetrics()
+  } else if (props.scrollTargetRef) {
+    const target = props.scrollTargetRef
+    const onScroll = () => scheduleScrollMetrics()
+    target.addEventListener('scroll', onScroll, { passive: true })
+    windowScrollCleanup = () => {
+      target.removeEventListener('scroll', onScroll)
+    }
+    scrollTop.value = target.scrollTop
+    viewportHeight.value = target.clientHeight
   } else {
     const sr = scrollRootRef.value
     if (sr) {
