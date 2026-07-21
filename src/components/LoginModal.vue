@@ -126,6 +126,7 @@
     </Transition>
   </Teleport>
 
+  <!-- 账号不存在，确认注册弹窗 -->
   <Teleport to="body">
     <Transition name="fade">
       <div
@@ -134,31 +135,20 @@
         @click.self="showRegisterConfirm = false"
       >
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-        
+
         <Transition name="scale">
           <div
             v-if="showRegisterConfirm"
             class="relative w-full max-w-sm rounded-3xl border border-white/20 bg-white/10 p-6 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl"
           >
-            <h3 class="mb-4 text-lg font-semibold text-white">注册账号</h3>
-            <p class="mb-4 text-slate-300">该手机号/邮箱尚未注册，请设置昵称完成注册</p>
-            
-            <div class="mb-4">
-              <label class="mb-2 block text-sm text-slate-300">昵称</label>
-              <input
-                v-model="nickname"
-                type="text"
-                placeholder="请输入昵称（2-30位）"
-                class="w-full rounded-xl border bg-white/5 px-4 py-3 text-white placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                @blur="validateNickname"
-              />
-              <p v-if="nicknameError" class="mt-2 text-sm text-red-400">{{ nicknameError }}</p>
-            </div>
-            
+            <h3 class="mb-3 text-lg font-semibold text-white">账号不存在</h3>
+            <p class="mb-6 text-sm text-slate-300">该{{ accountLabel }}尚未注册，是否继续注册并登录？</p>
+
             <div class="flex gap-3">
               <button
                 type="button"
                 class="flex-1 rounded-xl border border-white/20 py-3 font-medium text-slate-300 transition-all hover:bg-white/5 hover:text-white"
+                :disabled="isRegistering"
                 @click="showRegisterConfirm = false"
               >
                 取消
@@ -166,8 +156,8 @@
               <button
                 type="button"
                 class="flex-1 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 py-3 font-medium text-white shadow-lg shadow-indigo-500/25 transition-all hover:shadow-xl hover:shadow-indigo-500/30"
-                :disabled="isRegistering || !isNicknameValid"
-                :class="{ 'opacity-50 cursor-not-allowed': isRegistering || !isNicknameValid }"
+                :disabled="isRegistering"
+                :class="{ 'opacity-50 cursor-not-allowed': isRegistering }"
                 @click="handleRegisterAndLogin"
               >
                 <span v-if="isRegistering" class="flex items-center justify-center gap-2">
@@ -177,7 +167,7 @@
                   </svg>
                   注册中...
                 </span>
-                <span v-else>确认注册</span>
+                <span v-else>继续</span>
               </button>
             </div>
           </div>
@@ -206,18 +196,20 @@ const authStore = useAuthStore()
 const loginType = ref<'phone' | 'email'>('phone')
 const account = ref('')
 const password = ref('')
-const nickname = ref('')
 const showPassword = ref(false)
 const rememberMe = ref(false)
 const accountError = ref('')
 const passwordError = ref('')
-const nicknameError = ref('')
 const isLoading = ref(false)
 const isRegistering = ref(false)
 const showRegisterConfirm = ref(false)
 
 const phoneRegex = /^1[3-9]\d{9}$/
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const accountLabel = computed(() =>
+  loginType.value === 'phone' ? '手机号' : '邮箱'
+)
 
 const setLoginType = (type: 'phone' | 'email') => {
   loginType.value = type
@@ -227,30 +219,9 @@ const togglePassword = () => {
   showPassword.value = !showPassword.value
 }
 
-const validateNickname = () => {
-  if (!nickname.value.trim()) {
-    nicknameError.value = '昵称不能为空'
-    return false
-  }
-  if (nickname.value.length < 2) {
-    nicknameError.value = '昵称长度不能少于2位'
-    return false
-  }
-  if (nickname.value.length > 30) {
-    nicknameError.value = '昵称长度不能超过30位'
-    return false
-  }
-  nicknameError.value = ''
-  return true
-}
-
-const isNicknameValid = computed(() => {
-  return validateNickname()
-})
-
 const validateAccount = () => {
   if (!account.value.trim()) {
-    accountError.value = `${loginType.value === 'phone' ? '手机号' : '邮箱'}不能为空`
+    accountError.value = `${accountLabel.value}不能为空`
     return false
   }
   if (loginType.value === 'phone' && !phoneRegex.test(account.value)) {
@@ -297,24 +268,27 @@ const handleClose = () => {
 
 const handleLogin = async () => {
   if (!isValid.value || isLoading.value) return
-  
+
   isLoading.value = true
-  
+
   try {
     await authStore.login({
       account: account.value,
       password: password.value,
     })
-    
+
     handleLoginSuccess({
       nickname: authStore.user?.nickname || '用户',
       avatar: authStore.user?.avatar || '',
     })
   } catch (error: any) {
     console.error('登录失败:', error)
-    if (error.api?.code === 'USER_NOT_FOUND' || error.message?.includes('用户不存在')) {
+    const code = error.api?.code
+    // 40401 = 账号不存在，弹出确认注册
+    if (code === 40401 || code === '40401' || error.api?.status === 404) {
       showRegisterConfirm.value = true
     } else {
+      // 40101 = 账号或密码错误，其他错误直接提示
       alert(error.message || '登录失败')
     }
   } finally {
@@ -323,20 +297,18 @@ const handleLogin = async () => {
 }
 
 const handleRegisterAndLogin = async () => {
-  if (isRegistering.value || !validateNickname()) return
-  
+  if (isRegistering.value) return
+
   isRegistering.value = true
-  
+
   try {
     await authStore.register({
       account: account.value,
       password: password.value,
-      nickname: nickname.value,
     })
-    
+
     showRegisterConfirm.value = false
-    nickname.value = ''
-    
+
     handleLoginSuccess({
       nickname: authStore.user?.nickname || '用户',
       avatar: authStore.user?.avatar || '',

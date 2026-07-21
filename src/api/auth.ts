@@ -30,16 +30,16 @@ export const authApi = {
     
     return data
   },
-  async register(input: { account: string; password: string; nickname: string }): Promise<AuthResponse> {
+  async register(input: { account: string; password: string; nickname?: string }): Promise<AuthResponse> {
     const { data } = await http.post<AuthResponse>('/auth/register', input)
-    
+
     if (isApiResponse(data)) {
       if (data.code !== 0 && data.code !== 201) {
         throw new Error(data.msg || '注册失败')
       }
       return data.data as AuthResponse
     }
-    
+
     return data
   },
   async getCurrentUser(): Promise<AuthUser> {

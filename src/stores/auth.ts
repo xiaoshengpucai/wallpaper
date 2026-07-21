@@ -135,7 +135,7 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false
       }
     },
-    async register(input: { account: string; password: string; nickname: string }) {
+    async register(input: { account: string; password: string; nickname?: string }) {
       this.loading = true
       this.lastError = null
       try {
