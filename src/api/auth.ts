@@ -66,4 +66,24 @@ export const authApi = {
     
     return data
   },
+
+  /** 更新用户资料 PUT /api/v1/auth/me */
+  async updateProfile(fields: {
+    nickname?: string
+    email?: string
+    gender?: string
+    bio?: string
+    avatar?: string
+  }): Promise<AuthUser> {
+    const { data } = await http.put<AuthUser>('/auth/me', fields)
+
+    if (isApiResponse(data)) {
+      if (data.code !== 0 && data.code !== 200) {
+        throw new Error(data.msg || '更新资料失败')
+      }
+      return data.data as AuthUser
+    }
+
+    return data
+  },
 }

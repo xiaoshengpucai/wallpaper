@@ -1,3 +1,6 @@
+import tailwindcssForms from '@tailwindcss/forms'
+import tailwindcssTypography from '@tailwindcss/typography'
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{vue,ts,tsx}'],
@@ -21,6 +24,5 @@ export default {
       nav: '900px',
     },
   },
-  plugins: [require('@tailwindcss/forms'), require('@tailwindcss/typography')],
+  plugins: [tailwindcssForms, tailwindcssTypography],
 }
-

@@ -18,6 +18,7 @@ const routes: RouteRecordRaw[] = [
   },
   { path: '/avatar', component: () => import('../views/AvatarMakerPage.vue'), meta: { title: '头像制作' } },
   { path: '/download', component: () => import('../views/DownloadPage.vue'), meta: { title: '哲风壁纸下载' } },
+  { path: '/profile', name: 'Profile', component: () => import('../views/ProfilePage.vue'), meta: { title: '个人主页' } },
 ]
 
 export const router = createRouter({

@@ -37,6 +37,12 @@ const props = withDefaults(defineProps<TextPressureProps>(), {
   minFontSize: 12,
 })
 
+const FALLBACK_FONT_URL = '/fonts/RobotoFlex-Variable.woff2'
+const FALLBACK_FONT_FAMILY = 'Roboto Flex'
+
+const resolvedFontUrl = ref(props.fontUrl)
+const resolvedFontFamily = ref(props.fontFamily)
+
 const containerRef = useTemplateRef<HTMLDivElement>('containerRef')
 const titleRef = useTemplateRef<HTMLHeadingElement>('titleRef')
 const spansRef = ref<(HTMLSpanElement | null)[]>([])
@@ -133,8 +139,8 @@ const animate = () => {
 const dynamicStyles = computed(
   () => `
   @font-face {
-    font-family: '${props.fontFamily}';
-    src: url('${props.fontUrl}');
+    font-family: '${resolvedFontFamily.value}';
+    src: url('${resolvedFontUrl.value}');
     font-style: normal;
   }
   .stroke span {
@@ -154,9 +160,23 @@ const dynamicStyles = computed(
 `,
 )
 
+/** 尝试加载原始字体，404 时降级到本地备用字体 */
+const tryLoadFont = async () => {
+  try {
+    const res = await fetch(props.fontUrl, { method: 'HEAD', mode: 'cors' })
+    if (!res.ok) throw new Error(`Font responded ${res.status}`)
+  } catch {
+    // 原始链接不可用，降级到本地 Roboto Flex
+    resolvedFontUrl.value = FALLBACK_FONT_URL
+    resolvedFontFamily.value = FALLBACK_FONT_FAMILY
+  }
+}
+
 let styleElement: HTMLStyleElement | null = null
 
-onMounted(() => {
+onMounted(async () => {
+  await tryLoadFont()
+
   styleElement = document.createElement('style')
   styleElement.textContent = dynamicStyles.value
   styleElement.setAttribute('data-text-pressure', 'true')
@@ -198,7 +218,7 @@ watch([() => props.scale, () => props.text], () => {
 })
 
 const titleStyle = computed(() => ({
-  fontFamily: props.fontFamily,
+  fontFamily: resolvedFontFamily.value,
   fontSize: fontSize.value + 'px',
   lineHeight: lineHeight.value,
   transform: `scale(1, ${scaleY.value})`,

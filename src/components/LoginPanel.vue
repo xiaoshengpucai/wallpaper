@@ -1,18 +1,28 @@
 <template>
   <div
-    class="rounded-2xl border border-white/15 bg-black/50 h-[200px] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-sm"
+    class="rounded-2xl border border-white/15 bg-black/50 h-[200px] shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-sm"
     :class="isMobile ? 'text-center' : 'text-center'">
     <template v-if="isAuthenticated && user">
       <div class="flex flex-col items-center">
-        <span class="mt-8 text-sm font-semibold text-white">{{ user.nickname }}</span>
+        <span class="mt-8 text-sm font-semibold text-white">{{
+          user.nickname
+        }}</span>
         <div class="mt-8 flex items-center justify-between gap-10 text-xs text-slate-200/90">
-          <div>下载：<span class="font-semibold text-white">{{ user.totalLikes || 0 }}</span></div>
-          <div>收藏：<span class="font-semibold text-white">{{ user.totalFavorites || 0 }}</span></div>
+          <div>
+            下载：<span class="font-semibold text-white">{{
+              user.totalLikes || 0
+            }}</span>
+          </div>
+          <div>
+            收藏：<span class="font-semibold text-white">{{
+              user.totalFavorites || 0
+            }}</span>
+          </div>
         </div>
-        <div class="mt-8 flex gap-2 w-full">
+        <div class="mt-4 p-4 flex gap-2 w-full">
           <button type="button" @click="$emit('personal-center')"
             class="flex-1 rounded-lg border border-white/20 py-1.5 text-xs text-white/80 transition-all hover:bg-white/10">
-            个人中心
+            个人主页
           </button>
           <button type="button" @click="$emit('logout')"
             class="flex-1 rounded-lg border border-white/20 py-1.5 text-xs text-white/80 transition-all hover:bg-red-500/20 hover:text-red-400">
@@ -23,11 +33,15 @@
     </template>
 
     <template v-else>
-      <div class="flex flex-col items-center">
+      <div class="flex flex-col items-center pt-16">
         <span class="text-xs text-slate-300">登陆后获取名称和头像</span>
         <div class="mt-2 flex items-center justify-between gap-4 text-xs text-slate-200/90">
-          <div>下载：<span class="font-semibold text-white">{{ 0 }}</span></div>
-          <div>收藏：<span class="font-semibold text-white">{{ 0 }}</span></div>
+          <div>
+            下载：<span class="font-semibold text-white">{{ 0 }}</span>
+          </div>
+          <div>
+            收藏：<span class="font-semibold text-white">{{ 0 }}</span>
+          </div>
         </div>
         <div class="mt-3 flex justify-center gap-3">
           <div
@@ -66,22 +80,22 @@
 
 <script setup lang="ts">
 interface User {
-  nickname?: string
-  avatar?: string
-  totalLikes?: number
-  totalFavorites?: number
+  nickname?: string;
+  avatar?: string;
+  totalLikes?: number;
+  totalFavorites?: number;
 }
 
 defineProps<{
-  isAuthenticated: boolean
-  user: User | null
-  isMobile: boolean
-}>()
+  isAuthenticated: boolean;
+  user: User | null;
+  isMobile: boolean;
+}>();
 
 defineEmits<{
-  'wechat-login': []
-  'phone-login': []
-  'personal-center': []
-  'logout': []
-}>()
+  "wechat-login": [];
+  "phone-login": [];
+  "personal-center": [];
+  logout: [];
+}>();
 </script>

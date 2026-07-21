@@ -3,8 +3,8 @@
     <div v-if="backdropVisible" class="pointer-events-none fixed inset-0 z-[5] overflow-hidden" aria-hidden="true">
       <!-- 大于视口，避免 blur / cover 在边缘被裁成「缺角」 -->
       <div
-        class="absolute left-1/2 top-1/2 min-h-[130%] min-w-[130%] -translate-x-1/2 -translate-y-1/2 bg-cover bg-center"
-        :style="{ backgroundImage: backdropImage }" />
+        class="absolute left-1/2 top-1/2 min-h-[130%] min-w-[130%] -translate-x-1/2 -translate-y-1/2 bg-cover bg-center transition-[filter] duration-500 ease-out"
+        :style="{ backgroundImage: backdropImage, filter: isOriginalLoaded ? 'none' : 'blur(20px)' }" />
       <div class="absolute inset-0 bg-black/55" />
     </div>
   </Teleport>
@@ -24,7 +24,7 @@
         }">
           <div class="shrink-0" :style="{ width: `${STAGE_LEFT_W}px`, height: `${STAGE_LEFT_H}px`, marginBottom: previewKind === 'mobile' ? '100px' : '0px'}"
           >
-            <WallpaperDetailLaptopPreview v-if="previewKind === 'pc'" :image-url="detailPreviewImageUrl" />
+            <WallpaperDetailLaptopPreview v-if="previewKind === 'pc'" :image-url="progressiveDisplayUrl" :is-full-loaded="isOriginalLoaded" />
             <div v-else class="h-full w-full " >
               <WallpaperDetailPhonePreview :image-url="detailPreviewImageUrl" />
             </div>
@@ -137,7 +137,7 @@
         <div class="detail-pc-preview-stage">
           <div class="detail-pc-preview-scale" :style="narrowPcPreviewOuterStyle">
             <div class="origin-top-left" :style="narrowPcPreviewInnerStyle">
-              <WallpaperDetailLaptopPreview :image-url="detailPreviewImageUrl" />
+              <WallpaperDetailLaptopPreview :image-url="progressiveDisplayUrl" :is-full-loaded="isOriginalLoaded" />
             </div>
           </div>
         </div>
@@ -194,6 +194,7 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 
 import WallpaperDetailLaptopPreview from '../components/detail/WallpaperDetailLaptopPreview.vue'
 import WallpaperDetailMetaCard from '../components/detail/WallpaperDetailMetaCard.vue'
@@ -207,7 +208,6 @@ import {
   fetchWallpaperFileBlob,
   filterTagsForDisplay,
   reportWallpaperDownloaded,
-  reportWallpaperFavorite,
   type WallpaperItem,
 } from '../api/wallpapers'
 import type { CachedWallpaperDetail, WallpaperDetailKind } from '../utils/wallpaperDetailCache'
@@ -216,9 +216,11 @@ import { downloadImageFile, saveBlobAsDownload } from '../utils/downloadImageFil
 import { rememberWallpaperBackdropUrl } from '../utils/wallpaperBackdropMemory'
 import { cacheWallpaperForDetail, readWallpaperDetailCache } from '../utils/wallpaperDetailCache'
 import { createWidthOnlyDebouncedWindowResize, VIEWPORT_RESIZE_DEBOUNCE_MS } from '../utils/viewportResize'
+import { useProgressiveImage } from '../composables/useProgressiveImage'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const appThemeLight = inject<Ref<boolean> | undefined>('appThemeLight', undefined)
 const themeLight = computed(() => appThemeLight?.value === true)
 
@@ -417,18 +419,34 @@ const displayWallpaper = computed((): WallpaperItem => {
   }
 })
 
-/** 详情大图：优先 originalUrl，与列表 webp 区分 */
-const detailPreviewImageUrl = computed(() => {
+/** 缩略图 URL（列表用的中等尺寸图，接口已返回） */
+const thumbImageUrl = computed(() => displayWallpaper.value.imageUrl?.trim() || '')
+
+/** 原图 URL */
+const originalImageUrl = computed(() => {
   const o = displayWallpaper.value.originalUrl?.trim()
-  if (o) return o
-  return displayWallpaper.value.imageUrl
+  return o || ''
 })
+
+/** 详情大图：优先 originalUrl，与列表 webp 区分（向下兼容，用于下载等场景） */
+const detailPreviewImageUrl = computed(() => originalImageUrl.value || thumbImageUrl.value)
+
+/** 渐进加载：mac-wallpaper / phone-preview 先展示缩略图，原图后台加载完成后替换 */
+const { displayUrl: progressiveDisplayUrl, isFullLoaded: isOriginalLoaded } = useProgressiveImage(
+  originalImageUrl,
+  thumbImageUrl,
+)
+
+/** 背景层：优先使用缩略图快速展示，原图就绪后切换 */
+const backdropDisplayUrl = computed(() => progressiveDisplayUrl.value)
 
 const liveFavoriteCount = ref(0)
 const liveDownloadCount = ref(0)
 const liveFavorited = ref(false)
 const downloadPending = ref(false)
 const favoritePending = ref(false)
+// 防止 wallpaper deep watch 多次覆盖收藏状态
+let favoriteInitialized = false
 
 watch(
   () => wallpaper.value,
@@ -437,11 +455,21 @@ watch(
       liveFavoriteCount.value = 0
       liveDownloadCount.value = 0
       liveFavorited.value = false
+      favoriteInitialized = false
       return
     }
     liveFavoriteCount.value = w.favoriteCount ?? 0
     liveDownloadCount.value = w.downloadCount ?? 0
-    liveFavorited.value = w.isFavorited === true
+    // 仅首次初始化收藏状态，后续由 toggleFavorite 管理
+    if (!favoriteInitialized) {
+      favoriteInitialized = true
+      if (authStore.isAuthenticated) {
+        // 只信任 authStore 的实时数据，不依赖缓存中的 isFavorited
+        liveFavorited.value = authStore.isWallpaperCollected(w.id)
+      } else {
+        liveFavorited.value = w.isFavorited === true
+      }
+    }
   },
   { immediate: true, deep: true },
 )
@@ -537,20 +565,22 @@ async function onDownload() {
 
 async function onToggleFavorite() {
   if (favoritePending.value) return
-  const next = !liveFavorited.value
+  if (!authStore.isAuthenticated) {
+    window.alert('请先登录')
+    return
+  }
   favoritePending.value = true
+  const w = wallpaper.value
   try {
-    const patch = await reportWallpaperFavorite(wallpaperId.value, next, previewKind.value)
-    if (patch.isFavorited !== undefined) {
-      liveFavorited.value = patch.isFavorited
-    } else {
-      liveFavorited.value = next
-    }
-    if (patch.favoriteCount != null) {
-      liveFavoriteCount.value = patch.favoriteCount
-    } else {
-      liveFavoriteCount.value = Math.max(0, (liveFavoriteCount.value ?? 0) + (next ? 1 : -1))
-    }
+    const { collected } = await authStore.toggleCollection({
+      url: w?.originalUrl || w?.imageUrl || '',
+      wallpaperId: wallpaperId.value,
+      title: w?.title,
+      deviceType: previewKind.value,
+    })
+    liveFavorited.value = collected
+    // 本地 ±1 更新收藏计数
+    liveFavoriteCount.value = Math.max(0, liveFavoriteCount.value + (collected ? 1 : -1))
     persistDetailStats()
   } catch (e) {
     const msg = e instanceof Error ? e.message : '收藏操作失败'
@@ -569,7 +599,7 @@ const backdropVisible = computed(
 )
 
 const backdropImage = computed(() => {
-  const u = detailPreviewImageUrl.value
+  const u = backdropDisplayUrl.value
   if (!u) return 'none'
   return `url(${JSON.stringify(u)})`
 })

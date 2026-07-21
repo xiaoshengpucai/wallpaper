@@ -27,6 +27,8 @@
               class="mac-wallpaper"
               :class="{ 'opacity-0': imageLoading }"
               draggable="false"
+              fetchpriority="high"
+              loading="eager"
               @load="handleImageLoad"
               @error="handleImageError"
             />
@@ -58,6 +60,8 @@ import WaveLoader from '../WaveLoader.vue'
 
 const props = defineProps<{
   imageUrl: string
+  /** 原图是否已加载完成（false 时说明当前展示的是缩略图） */
+  isFullLoaded?: boolean
 }>()
 
 const STAGE_W = 1150

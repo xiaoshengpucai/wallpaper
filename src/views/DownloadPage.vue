@@ -1,5 +1,5 @@
 <template>
-  <PageShell title="哲风壁纸下载" />
+  <PageShell title="努力开发中，敬请期待！" />
 </template>
 
 <script setup lang="ts">

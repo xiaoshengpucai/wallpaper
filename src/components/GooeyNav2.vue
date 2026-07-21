@@ -565,8 +565,8 @@ li a {
   --theme-switch-light: #ffb800;
   --theme-switch-dark: #3214a8;
   position: relative;
-  width: 96px;
-  height: 38px;
+  width: 60px;
+  height: 25px;
   border-radius: 9999px;
   border: none;
   padding: 0;
@@ -594,11 +594,11 @@ li a {
 
 .theme-switch__stars {
   position: absolute;
-  left: 8px;
+  left: 6px;
   top: 50%;
-  transform: translateY(-50%) scale(0.92);
-  width: 44px;
-  height: 28px;
+  transform: translateY(-50%) scale(0.72);
+  width: 34px;
+  height: 22px;
   pointer-events: none;
   z-index: 1;
   opacity: 0;
@@ -609,7 +609,7 @@ li a {
 
 .theme-switch--dark .theme-switch__stars {
   opacity: 1;
-  transform: translateY(-50%) scale(1);
+  transform: translateY(-50%) scale(0.79);
 }
 
 .theme-switch__stars-svg {
@@ -620,11 +620,11 @@ li a {
 
 .theme-switch__clouds {
   position: absolute;
-  right: 10px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
-  width: 34px;
-  height: 22px;
+  width: 26px;
+  height: 17px;
   pointer-events: none;
   z-index: 1;
   opacity: 1;
@@ -646,26 +646,26 @@ li a {
 }
 
 .theme-switch__cloud--a {
-  width: 12px;
-  height: 12px;
+  width: 9px;
+  height: 9px;
   right: 2px;
   top: 2px;
 }
 
 .theme-switch__cloud--b {
-  width: 7px;
-  height: 7px;
-  right: 16px;
-  top: 10px;
+  width: 5px;
+  height: 5px;
+  right: 12px;
+  top: 8px;
 }
 
 .theme-switch__knob {
   position: absolute;
   top: 50%;
   left: 4px;
-  width: 30px;
-  height: 30px;
-  margin-top: -15px;
+  width: 22px;
+  height: 22px;
+  margin-top: -11px;
   border: none;
   border-radius: 50%;
   background: #ffffff;
@@ -682,8 +682,8 @@ li a {
 }
 
 .theme-switch--dark .theme-switch__knob {
-  /* 30px 宽 + 左右各 4px 内边距 = 贴内边缘，避免与 overflow:hidden 裁切冲突 */
-  left: calc(100% - 30px - 4px);
+  /* 22px 宽 + 左右各 4px 内边距 = 贴内边缘 */
+  left: calc(100% - 22px - 4px);
   box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.28),
     0 1px 2px rgba(0, 0, 0, 0.15);

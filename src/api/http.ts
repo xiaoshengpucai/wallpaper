@@ -161,10 +161,16 @@ http.interceptors.response.use(
     const normalized: ApiError = normalizeApiError(err)
     
     if (normalized.status === 401) {
-      tokenStorage.clear()
-      localStorage.removeItem('tokenExpires')
-      localStorage.removeItem('nickname')
-      localStorage.removeItem('avatar')
+      // 仅在关键认证接口 401 时清除 token（登录、获取用户信息）
+      // 非关键接口（如 collections）401 不清除，避免误杀登录态
+      const url = (err as any)?.config?.url || ''
+      const isCriticalAuth = url.includes('/auth/me') || url.includes('/auth/login')
+      if (isCriticalAuth) {
+        tokenStorage.clear()
+        localStorage.removeItem('tokenExpires')
+        localStorage.removeItem('nickname')
+        localStorage.removeItem('avatar')
+      }
     }
     
     return Promise.reject(Object.assign(new Error(normalized.message), { api: normalized }))

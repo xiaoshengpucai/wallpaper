@@ -38,7 +38,7 @@
                   <div v-else
                     class="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500/30 to-purple-500/30">
                     <span class="text-lg font-bold text-white/80">{{ (authStore.user?.nickname || '').slice(0, 1)
-                      }}</span>
+                    }}</span>
                   </div>
                 </div>
               </template>
@@ -57,7 +57,7 @@
               style="margin-top: 8px; font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;">
               <LoginPanel :is-authenticated="authInitialized && authStore.isAuthenticated" :user="authStore.user"
                 :is-mobile="true" @wechat-login="handleWechatLogin" @phone-login="openLoginModal"
-                @logout="handleLogout" />
+                @personal-center="handlePersonalCenter" @logout="handleLogout" />
             </div>
           </div>
         </div>
@@ -98,7 +98,7 @@
                   <div v-else
                     class="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500/30 to-purple-500/30">
                     <span class="text-lg font-bold text-white/80">{{ (authStore.user?.nickname || '').slice(0, 1)
-                      }}</span>
+                    }}</span>
                   </div>
                 </div>
               </template>
@@ -121,7 +121,7 @@
                   class="rounded-3xl border border-white/15 bg-black/10 w-[200px] h-[200px] shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-sm">
                   <LoginPanel :is-authenticated="authInitialized && authStore.isAuthenticated" :user="authStore.user"
                     :is-mobile="false" @wechat-login="handleWechatLogin" @phone-login="openLoginModal"
-                    @logout="handleLogout" />
+                    @personal-center="handlePersonalCenter" @logout="handleLogout" />
                 </div>
               </div>
             </Transition>
@@ -166,6 +166,11 @@ import { useAuthStore } from './stores/auth'
 
 // 登录
 const handleWechatLogin = () => {
+}
+
+const handlePersonalCenter = () => {
+  closeLoginPopover()
+  router.push('/profile')
 }
 
 const openLoginModal = () => {
@@ -214,6 +219,8 @@ const initAuth = async () => {
         await authStore.logout()
       }
     }
+    // 登录态下异步加载收藏列表
+    authStore.loadCollections()
   }
 
   authInitialized.value = true
@@ -293,7 +300,7 @@ const tabs = [
   },
   {
     key: 'download',
-    label: '个人中心',
+    label: '软件下载',
   },
 ] as const satisfies ReadonlyArray<{ key: TabKey; label: string }>
 
@@ -362,9 +369,10 @@ function pathToKey(path: string): TabKey {
 }
 
 const activeKey = computed(() => pathToKey(route.path))
-/** 详情页不高亮任何导航项；其余路径未匹配时默认电脑壁纸（与 `/` → `/pc` 一致） */
+/** 详情页、个人主页不高亮任何导航项；其余路径未匹配时默认电脑壁纸（与 `/` → `/pc` 一致） */
 const activeIndex = computed(() => {
   if (isWallpaperDetailRoute.value) return -1
+  if (route.path.startsWith('/profile')) return -1
   const idx = tabs.findIndex((t) => t.key === activeKey.value)
   return idx >= 0 ? idx : 1
 })

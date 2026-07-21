@@ -521,6 +521,8 @@ export type FetchWallpapersQuery = {
   tag?: string
   /** 默认 {@link DEFAULT_WALLPAPER_SORT} */
   sort?: string
+  /** 按 ID 列表筛选（用于个人主页收藏列表等场景） */
+  ids?: string[]
   /**
    * 结构化筛选（与 Mongo 文档字段对应，均为可选；前端点选筛选按钮时写入，不占用搜索框）。
    *
@@ -570,6 +572,7 @@ export async function fetchWallpapersPage(query: FetchWallpapersQuery): Promise<
   appendQueryParam(params, 'resolutionLabel', query.resolutionLabel)
   appendQueryParam(params, 'colorTone', query.colorTone)
   appendQueryParam(params, 'resolution', query.resolution)
+  if (query.ids?.length) (params as Record<string, unknown>).ids = query.ids.join(',')
 
   const { data } = await http.get<unknown>('/pc-wallpapers', {
     params,
@@ -683,6 +686,8 @@ export type FetchMobileWallpapersQuery = {
   sort?: string
   /** 关键词搜索（搜索框） */
   tag?: string
+  /** 按 ID 列表筛选（用于个人主页收藏列表等场景） */
+  ids?: string[]
   /** 结构化筛选 */
   hotLabel?: string
   wallpaperKind?: string
@@ -710,6 +715,7 @@ export async function fetchMobileWallpapersPage(
   appendQueryParam(params, 'resolutionLabel', query.resolutionLabel)
   appendQueryParam(params, 'colorTone', query.colorTone)
   appendQueryParam(params, 'resolution', query.resolution)
+  if (query.ids?.length) (params as Record<string, unknown>).ids = query.ids.join(',')
 
   const { data } = await http.get<unknown>('/mobile-wallpapers', {
     params,
@@ -873,4 +879,58 @@ export async function reportWallpaperFavorite(
   }
   const { data } = await http.post<unknown>(path, body, { signal })
   return parseWallpaperStatsPatch(data)
+}
+
+// ---- 用户收藏集合 API（POST /api/v1/auth/collections） ----
+
+/** 后端 collections 接口单条收藏项 */
+export type CollectionItem = {
+  url: string
+  wallpaperId?: string
+  title?: string
+  deviceType?: 'pc' | 'mobile'
+}
+
+/** POST /api/v1/auth/collections 的响应 */
+export type ToggleCollectionResult = {
+  /** true=已收藏，false=已取消 */
+  collected: boolean
+  /** 最新收藏列表 */
+  collections: CollectionItem[]
+}
+
+/**
+ * 收藏 / 取消收藏壁纸（切换语义，后端自动判定）。
+ */
+export async function toggleWallpaperCollection(payload: {
+  url: string
+  wallpaperId?: string | number
+  title?: string
+  deviceType?: 'pc' | 'mobile'
+}): Promise<ToggleCollectionResult> {
+  const { data } = await http.post<unknown>('/auth/collections', {
+    url: payload.url,
+    wallpaperId: payload.wallpaperId != null ? String(payload.wallpaperId) : undefined,
+    title: payload.title,
+    deviceType: payload.deviceType,
+  })
+
+  const d = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>
+  const inner = (d.data && typeof d.data === 'object' ? d.data : d) as Record<string, unknown>
+
+  return {
+    collected: inner.collected === true,
+    collections: Array.isArray(inner.collections) ? (inner.collections as CollectionItem[]) : [],
+  }
+}
+
+/**
+ * 获取当前用户的收藏列表 GET /api/v1/auth/collections
+ */
+export async function fetchUserCollections(): Promise<CollectionItem[]> {
+  const { data } = await http.get<unknown>('/auth/collections')
+  const d = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>
+  const inner = (d.data && typeof d.data === 'object' ? d.data : d) as Record<string, unknown>
+  const list = inner.collections ?? inner
+  return Array.isArray(list) ? (list as CollectionItem[]) : []
 }
