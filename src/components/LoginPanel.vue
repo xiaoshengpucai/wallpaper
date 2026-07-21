@@ -10,12 +10,12 @@
         <div class="mt-8 flex items-center justify-between gap-10 text-xs text-slate-200/90">
           <div>
             下载：<span class="font-semibold text-white">{{
-              user.totalLikes || 0
+              user.downloads || 0
             }}</span>
           </div>
           <div>
             收藏：<span class="font-semibold text-white">{{
-              user.totalFavorites || 0
+              user.favorites || 0
             }}</span>
           </div>
         </div>
@@ -82,8 +82,8 @@
 interface User {
   nickname?: string;
   avatar?: string;
-  totalLikes?: number;
-  totalFavorites?: number;
+  downloads?: number;
+  favorites?: number;
 }
 
 defineProps<{

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 
 import { authApi } from '../api/auth'
-import { toggleWallpaperCollection, fetchUserCollections, type CollectionItem } from '../api/wallpapers'
+import { toggleWallpaperCollection, type CollectionItem } from '../api/wallpapers'
 import { tokenStorage } from '../utils/tokenStorage'
 
 type WallpaperCollection = {
@@ -19,15 +19,20 @@ export type AuthUser = {
   gender?: 'male' | 'female' | 'unknown' | string
   bio?: string
   totalLikes: number
+  /** 收藏总数（= collections.length，后端已改为数字） */
   totalFavorites: number
+  /** 收藏总数（后端 favorites 现在是数字 = collections.length） */
+  favorites: number
+  /** 下载总数 */
+  downloads: number
+  /** 个人主页背景图 */
+  background?: string
   likes: {
     pc: WallpaperCollection
     mobile: WallpaperCollection
   }
-  favorites: {
-    pc: WallpaperCollection
-    mobile: WallpaperCollection
-  }
+  /** 用户收藏的壁纸列表（收藏图片列表数据源） */
+  collections: CollectionItem[]
 }
 
 const USER_KEY = 'wallpaper.user'
@@ -37,10 +42,6 @@ type AuthState = {
   token: string | null
   loading: boolean
   lastError: string | null
-  /** 用户收藏列表（由 /api/v1/auth/collections 返回） */
-  collections: CollectionItem[]
-  /** collections 是否已加载过（避免重复请求） */
-  collectionsLoaded: boolean
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -49,42 +50,65 @@ export const useAuthStore = defineStore('auth', {
     token: null,
     loading: false,
     lastError: null,
-    collections: [],
-    collectionsLoaded: false,
   }),
   getters: {
       isAuthenticated: (s) => Boolean(s.token),
+      /** 用户收藏的壁纸列表（统一由 user.collections 提供） */
+      collections: (s): CollectionItem[] => s.user?.collections ?? [],
       /** 判断某壁纸是否已收藏 */
       isWallpaperCollected: (s) => {
         return (wallpaperId: string | number) => {
           const id = String(wallpaperId)
-          // 同时检查 collections 和 user.favorites，任一命中即为已收藏
-          if (s.collections.length > 0) {
-            if (s.collections.some((c) => String(c.wallpaperId) === id)) return true
-          }
-          const pcIds = (s.user?.favorites?.pc?.wallpapers ?? []).map(String)
-          const mobileIds = (s.user?.favorites?.mobile?.wallpapers ?? []).map(String)
-          return pcIds.includes(id) || mobileIds.includes(id)
+          const list = s.user?.collections ?? []
+          return list.some((c) => String(c.wallpaperId) === id)
         }
       },
       /** 按设备类型过滤的收藏列表 */
       collectionsByDevice: (s) => {
         return (deviceType: 'pc' | 'mobile') =>
-          s.collections.filter((c) => c.deviceType === deviceType)
+          (s.user?.collections ?? []).filter((c) => c.deviceType === deviceType)
       },
     },
   actions: {
     hydrate() {
       const token = tokenStorage.get()
-      if (token) this.token = token
+      console.log('[auth] hydrate - token exists:', !!token)
+      if (token) {
+        this.token = token
+      } else {
+        this.token = null
+        this.user = null
+        console.log('[auth] hydrate - no token, clearing user')
+        return
+      }
       
       try {
         const userStr = localStorage.getItem(USER_KEY)
+        console.log('[auth] hydrate - userStr exists:', !!userStr)
         if (userStr) {
-          this.user = JSON.parse(userStr) as AuthUser
+          const parsed = JSON.parse(userStr) as Record<string, unknown>
+          console.log('[auth] hydrate - parsed user has id:', 'id' in parsed, 'has nickname:', 'nickname' in parsed)
+          if (parsed && typeof parsed === 'object' && 'id' in parsed && 'nickname' in parsed) {
+            const normalized: AuthUser = parsed as AuthUser
+            if (!('collections' in parsed)) {
+              normalized.collections = []
+            }
+            if (!('favorites' in parsed) || typeof parsed.favorites !== 'number') {
+              normalized.favorites = 0
+            }
+            if (!('downloads' in parsed) || typeof parsed.downloads !== 'number') {
+              normalized.downloads = 0
+            }
+            this.user = normalized
+            console.log('[auth] hydrate - user restored:', normalized.nickname)
+          } else {
+            this.user = null
+            console.log('[auth] hydrate - user missing id/nickname')
+          }
         }
-      } catch {
+      } catch (err) {
         this.user = null
+        console.log('[auth] hydrate - parse error:', err)
       }
     },
     saveUser(user: AuthUser) {
@@ -139,11 +163,18 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.lastError = null
       try {
+        console.log('[auth] getCurrentUser - calling API...')
         const user = await authApi.getCurrentUser()
-        this.saveUser(user)
+        console.log('[auth] getCurrentUser - API response:', user && typeof user === 'object' ? user.nickname : user)
+        if (user && typeof user === 'object' && 'id' in user && 'nickname' in user) {       this.saveUser(user)
+          console.log('[auth] getCurrentUser - user saved:', user.nickname)
+        } else {
+          console.log('[auth] getCurrentUser - invalid user data, not saving')
+        }
         return user
       } catch (e) {
         this.lastError = e instanceof Error ? e.message : '获取用户信息失败'
+        console.log('[auth] getCurrentUser - error:', e instanceof Error ? e.message : e)
         throw e
       } finally {
         this.loading = false
@@ -153,8 +184,6 @@ export const useAuthStore = defineStore('auth', {
       this.user = null
       this.token = null
       this.lastError = null
-      this.collections = []
-      this.collectionsLoaded = false
       tokenStorage.clear()
       try {
         localStorage.removeItem(USER_KEY)
@@ -179,7 +208,7 @@ export const useAuthStore = defineStore('auth', {
     },
 
     /**
-     * 收藏/取消收藏壁纸，同步更新本地 collections 列表。
+     * 收藏/取消收藏壁纸，同步更新本地 user.collections。
      * @returns `{ collected }` — true=已收藏，false=已取消
      */
     async toggleCollection(payload: {
@@ -189,53 +218,12 @@ export const useAuthStore = defineStore('auth', {
       deviceType?: 'pc' | 'mobile'
     }) {
       const res = await toggleWallpaperCollection(payload)
-      // 用后端返回的最新列表替换本地
-      this.collections = res.collections
-      this.collectionsLoaded = true
-      // 同步 user.favorites 计数
       if (this.user) {
-        const pcCount = res.collections.filter((c) => c.deviceType === 'pc').length
-        const mobileCount = res.collections.filter((c) => c.deviceType === 'mobile').length
-        this.user.favorites.pc.count = pcCount
-        this.user.favorites.pc.wallpapers = res.collections
-          .filter((c) => c.deviceType === 'pc' && c.wallpaperId)
-          .map((c) => c.wallpaperId!)
-        this.user.favorites.mobile.count = mobileCount
-        this.user.favorites.mobile.wallpapers = res.collections
-          .filter((c) => c.deviceType === 'mobile' && c.wallpaperId)
-          .map((c) => c.wallpaperId!)
+        this.user.collections = res.collections
+        this.user.favorites = res.collections.length
         this.saveUser(this.user)
       }
       return { collected: res.collected }
-    },
-
-    /** 设置 collections（用于登录后从 getCurrentUser 初始化） */
-    setCollections(items: CollectionItem[]) {
-      this.collections = items
-    },
-
-    /** 从后端拉取最新收藏列表并同步 user.favorites（force=true 强制刷新） */
-    async loadCollections(force = false) {
-      if (!this.token) return
-      if (this.collectionsLoaded && !force) return
-      try {
-        const items = await fetchUserCollections()
-        this.collections = items
-        this.collectionsLoaded = true
-        if (this.user) {
-          this.user.favorites.pc.wallpapers = items
-            .filter((c) => c.deviceType === 'pc' && c.wallpaperId)
-            .map((c) => c.wallpaperId!)
-          this.user.favorites.pc.count = this.user.favorites.pc.wallpapers.length
-          this.user.favorites.mobile.wallpapers = items
-            .filter((c) => c.deviceType === 'mobile' && c.wallpaperId)
-            .map((c) => c.wallpaperId!)
-          this.user.favorites.mobile.count = this.user.favorites.mobile.wallpapers.length
-          this.saveUser(this.user)
-        }
-      } catch {
-        // 静默失败，不影响页面展示
-      }
     },
 
     /** 更新用户资料 */
@@ -245,6 +233,7 @@ export const useAuthStore = defineStore('auth', {
       gender?: string
       bio?: string
       avatar?: string
+      background?: string
     }) {
       const res = await authApi.updateProfile(fields)
       // 如果后端返回了完整用户对象，直接使用；否则只合并字段

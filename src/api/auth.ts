@@ -20,7 +20,6 @@ function isApiResponse(resp: unknown): resp is ApiResponse<unknown> {
 export const authApi = {
   async login(input: { account: string; password: string }): Promise<AuthResponse> {
     const { data } = await http.post<AuthResponse>('/auth/login', input)
-    console.log(http.post<AuthResponse>('/auth/login', input))
     if (isApiResponse(data)) {
       if (data.code !== 0 && data.code !== 200) {
         throw new Error(data.msg || '登录失败')
@@ -49,6 +48,10 @@ export const authApi = {
       if (data.code !== 0 && data.code !== 200) {
         throw new Error(data.msg || '获取用户信息失败')
       }
+      const inner = data.data as Record<string, unknown>
+      if (inner && typeof inner === 'object' && 'user' in inner) {
+        return inner.user as AuthUser
+      }
       return data.data as AuthUser
     }
     
@@ -74,12 +77,17 @@ export const authApi = {
     gender?: string
     bio?: string
     avatar?: string
+    background?: string
   }): Promise<AuthUser> {
     const { data } = await http.put<AuthUser>('/auth/me', fields)
 
     if (isApiResponse(data)) {
       if (data.code !== 0 && data.code !== 200) {
         throw new Error(data.msg || '更新资料失败')
+      }
+      const inner = data.data as Record<string, unknown>
+      if (inner && typeof inner === 'object' && 'user' in inner) {
+        return inner.user as AuthUser
       }
       return data.data as AuthUser
     }

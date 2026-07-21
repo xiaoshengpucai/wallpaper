@@ -183,7 +183,6 @@ const closeLoginModal = () => {
 }
 
 const authStore = useAuthStore()
-console.log(authStore.user);
 
 const handleLoginSuccess = () => {
   loginModalVisible.value = false
@@ -212,15 +211,13 @@ const initAuth = async () => {
   authStore.hydrate()
 
   if (authStore.isAuthenticated) {
-    if (!authStore.user) {
-      try {
-        await authStore.getCurrentUser()
-      } catch {
+    try {
+      await authStore.getCurrentUser()
+    } catch (e: any) {
+      if (e?.api?.status === 401) {
         await authStore.logout()
       }
     }
-    // 登录态下异步加载收藏列表
-    authStore.loadCollections()
   }
 
   authInitialized.value = true

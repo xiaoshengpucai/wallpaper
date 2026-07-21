@@ -33,8 +33,9 @@
     <!-- 右侧面板：个人主页主体 -->
     <div class="flex-1 overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm">
       <!-- 顶部 Banner -->
-      <div class="profile-banner relative h-[180px] w-full overflow-hidden sm:h-[200px]">
-        <div class="absolute inset-0 bg-cover bg-center"
+      <div class="profile-banner relative h-[180px] w-full overflow-hidden cursor-pointer sm:h-[200px]"
+        @click="openBackgroundUpload">
+        <div class="absolute top-0 left-0 w-full h-full bg-cover bg-center"
           :style="{ backgroundImage: bannerBg }" />
         <div class="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" />
 
@@ -306,6 +307,13 @@
       </div>
     </div>
   </div>
+
+  <!-- 背景图上传裁剪弹窗 -->
+  <ImageCropperModal
+    :visible="backgroundModalVisible"
+    @close="closeBackgroundModal"
+    @confirm="handleBackgroundUpload"
+  />
 </template>
 
 <script setup lang="ts">
@@ -320,16 +328,10 @@ import ProfileEmptyState from '../components/profile/ProfileEmptyState.vue'
 const TiltedCard = defineAsyncComponent(() => import('../components/TiltedCard.vue'))
 const WallpaperHoverOverlay = defineAsyncComponent(() => import('../components/WallpaperHoverOverlay.vue'))
 const WallpaperMasonry = defineAsyncComponent(() => import('../components/WallpaperMasonry.vue'))
+const ImageCropperModal = defineAsyncComponent(() => import('../components/ImageCropperModal.vue'))
 
 const router = useRouter()
 const authStore = useAuthStore()
-
-// 进入个人主页时刷新收藏列表（不重新拉 getCurrentUser，避免 401 清除登录态）
-onMounted(() => {
-  if (authStore.isAuthenticated) {
-    authStore.loadCollections()
-  }
-})
 
 const user = computed<AuthUser | null>(() => authStore.user)
 
@@ -343,8 +345,12 @@ const stats = computed(() => ({
 }))
 
 const bannerBg = computed(() => {
+  if (user.value?.background) {
+    const cleanBackground = user.value.background.replace(/\n/g, '')
+    return `url("${cleanBackground}")`
+  }
   if (user.value?.avatar) {
-    return `url(${JSON.stringify(user.value.avatar)})`
+    return `url("${user.value.avatar}")`
   }
   return 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)'
 })
@@ -376,11 +382,72 @@ const activeFilter = ref<FilterKey>('recent')
 type FavKind = 'pc' | 'mobile'
 const favKind = ref<FavKind>('pc')
 
-// 从 user.favorites 读取收藏 ID（toggleCollection 会同步更新此数据）
-const pcFavIds = computed(() => user.value?.favorites?.pc?.wallpapers ?? [])
-const mobileFavIds = computed(() => user.value?.favorites?.mobile?.wallpapers ?? [])
-const pcFavCount = computed(() => user.value?.favorites?.pc?.count ?? 0)
-const mobileFavCount = computed(() => user.value?.favorites?.mobile?.count ?? 0)
+// ---- 背景图上传 ----
+const backgroundModalVisible = ref(false)
+
+function openBackgroundUpload() {
+  backgroundModalVisible.value = true
+}
+
+function closeBackgroundModal() {
+  backgroundModalVisible.value = false
+}
+
+async function handleBackgroundUpload(base64: string) {
+  if (!authStore.isAuthenticated) return
+  
+  try {
+    await authStore.updateProfile({ background: base64 })
+  } catch {
+    // 忽略错误
+  }
+  
+  closeBackgroundModal()
+}
+
+// 进入个人主页时刷新用户信息（包含 collections），确保数据与后端一致
+onMounted(() => {
+  if (authStore.isAuthenticated) {
+    authStore.getCurrentUser().catch(() => {})
+  }
+  
+  const savedTab = localStorage.getItem('profile.activeTab') as TabKey
+  if (savedTab && tabs.some(t => t.key === savedTab)) {
+    activeTab.value = savedTab
+  }
+  
+  const savedFavKind = localStorage.getItem('profile.favKind') as FavKind
+  if (savedFavKind && ['pc', 'mobile'].includes(savedFavKind)) {
+    favKind.value = savedFavKind
+  }
+  
+  const savedFilter = localStorage.getItem('profile.activeFilter') as FilterKey
+  if (savedFilter && filters.some(f => f.key === savedFilter)) {
+    activeFilter.value = savedFilter
+  }
+})
+
+watch(activeTab, (val) => {
+  localStorage.setItem('profile.activeTab', val)
+})
+
+watch(favKind, (val) => {
+  localStorage.setItem('profile.favKind', val)
+})
+
+watch(activeFilter, (val) => {
+  localStorage.setItem('profile.activeFilter', val)
+})
+
+// 从 user.collections 读取收藏 ID（后端已统一收藏列表数据源）
+const pcFavIds = computed(() => 
+  (user.value?.collections ?? []).filter((c) => c.deviceType === 'pc' && c.wallpaperId).map((c) => c.wallpaperId!)
+)
+const mobileFavIds = computed(() => 
+  (user.value?.collections ?? []).filter((c) => c.deviceType === 'mobile' && c.wallpaperId).map((c) => c.wallpaperId!)
+)
+const pcFavCount = computed(() => pcFavIds.value.length)
+const mobileFavCount = computed(() => mobileFavIds.value.length)
 
 // 收藏壁纸完整数据（通过 API 获取）
 const pcFavItems = ref<WallpaperItem[]>([])
@@ -537,11 +604,14 @@ async function saveProfile() {
   content: '';
   position: absolute;
   inset: 0;
-  backdrop-filter: blur(40px) saturate(1.4);
-  -webkit-backdrop-filter: blur(40px) saturate(1.4);
+  z-index: 0;
 }
 
-.profile-banner > * {
+.profile-banner > div:first-child {
+  z-index: -1;
+}
+
+.profile-banner > div:not(:first-child) {
   position: relative;
   z-index: 1;
 }

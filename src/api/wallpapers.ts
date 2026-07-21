@@ -924,13 +924,4 @@ export async function toggleWallpaperCollection(payload: {
   }
 }
 
-/**
- * 获取当前用户的收藏列表 GET /api/v1/auth/collections
- */
-export async function fetchUserCollections(): Promise<CollectionItem[]> {
-  const { data } = await http.get<unknown>('/auth/collections')
-  const d = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>
-  const inner = (d.data && typeof d.data === 'object' ? d.data : d) as Record<string, unknown>
-  const list = inner.collections ?? inner
-  return Array.isArray(list) ? (list as CollectionItem[]) : []
-}
+

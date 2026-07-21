@@ -37,6 +37,9 @@ function validateToken(): boolean {
 
 function sanitizeInput(value: unknown): unknown {
   if (typeof value === 'string') {
+    if (value.startsWith('data:image/')) {
+      return value
+    }
     return value
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
       .replace(/<[^>]*>/g, '')
@@ -161,16 +164,8 @@ http.interceptors.response.use(
     const normalized: ApiError = normalizeApiError(err)
     
     if (normalized.status === 401) {
-      // 仅在关键认证接口 401 时清除 token（登录、获取用户信息）
-      // 非关键接口（如 collections）401 不清除，避免误杀登录态
-      const url = (err as any)?.config?.url || ''
-      const isCriticalAuth = url.includes('/auth/me') || url.includes('/auth/login')
-      if (isCriticalAuth) {
-        tokenStorage.clear()
-        localStorage.removeItem('tokenExpires')
-        localStorage.removeItem('nickname')
-        localStorage.removeItem('avatar')
-      }
+      // 不在拦截器中自动清除 token，由调用方根据业务语义决定
+      // 避免 /auth/me 401 误杀登录态导致刷新后丢失
     }
     
     return Promise.reject(Object.assign(new Error(normalized.message), { api: normalized }))
