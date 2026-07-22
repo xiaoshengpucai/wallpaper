@@ -698,25 +698,43 @@ function getBaseDisplaySize() {
     return { width: 0, height: 0 };
   }
 
-  const imgRatio = imageSize.value.width / imageSize.value.height;
-  const containerRatio = containerWidth / containerHeight;
+  const imgWidth = imageSize.value.width;
+  const imgHeight = imageSize.value.height;
+  const imgRatio = imgWidth / imgHeight;
+
+  const rotationAngle = ((rotation.value % 360) + 360) % 360;
+  const isRotated = rotationAngle === 90 || rotationAngle === 270;
+
+  const visualRatio = isRotated ? imgHeight / imgWidth : imgRatio;
+
+  let visualWidth: number;
+  let visualHeight: number;
 
   const currentFitMode = props.fitMode || "width";
+
+  if (currentFitMode === "cover") {
+    const containerRatio = containerWidth / containerHeight;
+    if (visualRatio > containerRatio) {
+      visualHeight = containerHeight;
+      visualWidth = containerHeight * visualRatio;
+    } else {
+      visualWidth = containerWidth;
+      visualHeight = containerWidth / visualRatio;
+    }
+  } else {
+    visualWidth = containerWidth;
+    visualHeight = containerWidth / visualRatio;
+  }
 
   let displayWidth: number;
   let displayHeight: number;
 
-  if (currentFitMode === "cover") {
-    if (imgRatio > containerRatio) {
-      displayHeight = containerHeight;
-      displayWidth = containerHeight * imgRatio;
-    } else {
-      displayWidth = containerWidth;
-      displayHeight = containerWidth / imgRatio;
-    }
+  if (isRotated) {
+    displayWidth = visualHeight;
+    displayHeight = visualWidth;
   } else {
-    displayWidth = containerWidth;
-    displayHeight = containerWidth / imgRatio;
+    displayWidth = visualWidth;
+    displayHeight = visualHeight;
   }
 
   return { width: displayWidth, height: displayHeight };
@@ -752,6 +770,29 @@ function resetImage() {
   rotation.value = 0;
 }
 
+function getVisualSize() {
+  const { width: displayWidth, height: displayHeight } = getBaseDisplaySize();
+  const rotationAngle = ((rotation.value % 360) + 360) % 360;
+  if (rotationAngle === 90 || rotationAngle === 270) {
+    return { width: displayHeight, height: displayWidth };
+  }
+  return { width: displayWidth, height: displayHeight };
+}
+
+function screenToRotatedCoords(x: number, y: number) {
+  const rotationAngle = ((rotation.value % 360) + 360) % 360;
+  switch (rotationAngle) {
+    case 90:
+      return { x: y, y: -x };
+    case 180:
+      return { x: -x, y: -y };
+    case 270:
+      return { x: -y, y: x };
+    default:
+      return { x, y };
+  }
+}
+
 function startDrag(event: MouseEvent) {
   event.preventDefault();
   event.stopPropagation();
@@ -781,10 +822,9 @@ function onDrag(event: MouseEvent) {
     const containerWidth = containerRect.width;
     const containerHeight = containerRect.height;
 
-    const { width: displayWidth, height: displayHeight } = getBaseDisplaySize();
-
-    const scaledWidth = displayWidth * scale.value;
-    const scaledHeight = displayHeight * scale.value;
+    const { width: visualWidth, height: visualHeight } = getVisualSize();
+    const scaledWidth = visualWidth * scale.value;
+    const scaledHeight = visualHeight * scale.value;
 
     const maxX = Math.max(0, (scaledWidth - containerWidth) / 2);
     const minX = -maxX;
@@ -828,6 +868,7 @@ function onTouchDrag(event: TouchEvent) {
   event.preventDefault();
   event.stopPropagation();
   const touch = event.touches[0];
+
   const newX = touch.clientX - dragStart.value.x;
   const newY = touch.clientY - dragStart.value.y;
 
@@ -840,10 +881,9 @@ function onTouchDrag(event: TouchEvent) {
     const containerWidth = containerRect.width;
     const containerHeight = containerRect.height;
 
-    const { width: displayWidth, height: displayHeight } = getBaseDisplaySize();
-
-    const scaledWidth = displayWidth * scale.value;
-    const scaledHeight = displayHeight * scale.value;
+    const { width: visualWidth, height: visualHeight } = getVisualSize();
+    const scaledWidth = visualWidth * scale.value;
+    const scaledHeight = visualHeight * scale.value;
 
     const maxX = Math.max(0, (scaledWidth - containerWidth) / 2);
     const minX = -maxX;
@@ -868,6 +908,7 @@ function stopTouchDrag() {
 
 function rotate(deg: number) {
   rotation.value += deg;
+  position.value = { x: 0, y: 0 };
 }
 
 function handleScaleUpdate(val: number) {
@@ -921,12 +962,12 @@ function handleConfirm() {
     ctx.imageSmoothingQuality = "high";
 
     ctx.save();
-    // 所有坐标按 sourceScale 放大到原图分辨率
     ctx.translate(outputWidth / 2, outputHeight / 2);
     ctx.rotate(radians);
 
-    const drawX = (-scaledWidth / 2 + position.value.x) * sourceScale;
-    const drawY = (-scaledHeight / 2 + position.value.y) * sourceScale;
+    const rotatedPos = screenToRotatedCoords(position.value.x, position.value.y);
+    const drawX = (-scaledWidth / 2 + rotatedPos.x) * sourceScale;
+    const drawY = (-scaledHeight / 2 + rotatedPos.y) * sourceScale;
     const drawW = scaledWidth * sourceScale;
     const drawH = scaledHeight * sourceScale;
 
