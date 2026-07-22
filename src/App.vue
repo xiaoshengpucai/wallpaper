@@ -14,8 +14,10 @@
     :data-theme="appThemeLight ? 'light' : 'dark'">
     <TopProgress :width="progressWidth" :visible="progressVisible" />
 
-    <div :class="{ 'header-placeholder': isHeaderFixed }" :style="{ height: isHeaderFixed ? `${headerHeight}px` : undefined }">
-      <header ref="headerRef" class="relative z-40 min-w-0 pt-[20px] font-xingkai max-[899px]:px-3 max-[899px]:pt-4 transition-all duration-300"
+    <div :class="{ 'header-placeholder': isHeaderFixed }"
+      :style="{ height: isHeaderFixed ? `${headerHeight}px` : undefined }">
+      <header ref="headerRef"
+        class="relative z-40 min-w-0 pt-[20px] font-xingkai max-[899px]:px-3 max-[899px]:pt-4 transition-all duration-300"
         :class="{ 'fixed-header': isHeaderFixed }">
         <div
           class="mx-auto flex w-[90%] max-w-full min-w-0 items-center justify-between gap-4 max-[899px]:w-full max-[899px]:flex-col max-[899px]:items-stretch max-[899px]:gap-3 nav:flex-row">
@@ -65,8 +67,8 @@
           </div>
 
           <!-- 移动端首行（桌面端）：品牌 -->
-          <div class="hidden min-w-0 max-w-none nav:block">
-            <div class="min-w-0 max-w-none shrink overflow-hidden">
+          <div class="hidden min-w-0 max-w-none  nav:block">
+            <div class="min-w-0 max-w-none  shrink overflow-hidden">
               <GlitchText children="凉云图集" :speed="0.5" :enable-shadows="true" :enable-on-hover="true"
                 :light-theme="appThemeLight" />
             </div>
@@ -74,7 +76,7 @@
 
           <!-- 导航：桌面中间条；移动端第二行全宽胶囊 -->
           <div
-            class="nav-shell relative flex w-full min-w-0 max-w-full items-center overflow-hidden rounded-full border bg-transparent px-1.5 py-1.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+            class="nav-shell relative flex w-full min-w-0 max-w-full items-center overflow-hidden rounded-full border bg-transparent px-1.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
             :class="appThemeLight
               ? 'border-slate-400/40 text-slate-700'
               : 'border-white/10 text-slate-200'
@@ -502,7 +504,7 @@ const progressVisible = computed(() => progress.state.visible.value)
   background-color: rgba(57, 57, 57, 0.1);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  padding: 10px 0 10px 0;
+  padding: 10px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   animation: headerSlideDown 0.3s ease-out forwards;
 }
@@ -512,6 +514,7 @@ const progressVisible = computed(() => progress.state.visible.value)
     top: -100%;
     opacity: 0;
   }
+
   to {
     top: 0;
     opacity: 1;

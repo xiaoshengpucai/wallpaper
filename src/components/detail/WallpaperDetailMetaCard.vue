@@ -25,27 +25,19 @@
       <h1
         class="font-semibold leading-snug tracking-tight"
         :class="[
-          narrowFill ? 'text-[15px]' : 'text-[20px] sm:text-[19px]',
+          narrowFill ? 'text-[13px] sm:text-[15px]' : 'text-[20px] sm:text-[19px]',
           themeLight ? 'text-slate-900' : 'text-[#E8E8EA]',
         ]"
       >
         {{ displayTitle }}
       </h1>
-      <p
-        class="font-mono tabular-nums leading-none"
-        :class="[
-          narrowFill ? 'mt-1 text-[11px]' : 'mt-2 text-[13px]',
-          themeLight ? 'text-slate-500' : 'text-white/50',
-        ]"
-      >
-        ID {{ wallpaperId }}
-      </p>
+      
 
       <!-- 与参考图一致：左列 分类 / 色系 / 下载量，右列 分辨率 / 大小 / 收藏量 -->
       <div
         class="grid flex-1 grid-cols-2 content-start leading-snug"
         :class="[
-          narrowFill ? 'mt-4 gap-x-3 gap-y-3 text-[13px]' : 'mt-7 gap-x-6 gap-y-6 text-[16px] sm:gap-x-7 sm:gap-y-7',
+          narrowFill ? 'mt-3 gap-x-2 gap-y-2 text-[12px] sm:text-[13px]' : 'mt-7 gap-x-6 gap-y-6 text-[16px] sm:gap-x-7 sm:gap-y-7',
           narrow && !narrowFill ? 'grid-cols-1 gap-y-5' : '',
         ]"
       >
@@ -82,7 +74,7 @@
             <span
               class="inline-block shrink-0 rounded-full shadow-[inset_0_1px_2px_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,255,255,0.12)] ring-1 ring-white/20"
               :class="[
-                narrowFill ? 'h-3 w-3' : 'h-4 w-4',
+                narrowFill ? 'h-2.5 w-2.5' : 'h-4 w-4',
                 themeLight ? 'bg-slate-400 ring-slate-300' : 'bg-[#9CA3AF]',
               ]"
               aria-hidden="true"
@@ -125,7 +117,7 @@
 
       <div
         class="mt-auto flex w-full shrink-0 flex-col"
-        :class="narrowFill ? 'gap-3 pt-3' : 'gap-4 pt-5'"
+        :class="narrowFill ? 'gap-2.5 pt-2' : 'gap-4 pt-5'"
       >
         <WallpaperDetailActionBar
           :theme-light="themeLight"
@@ -141,20 +133,20 @@
         <div
           class="flex shrink-0 flex-col items-center border-t"
           :class="[
-            narrowFill ? 'pt-3' : 'pt-5',
+            narrowFill ? 'pt-2' : 'pt-5',
             themeLight ? 'border-slate-300/35' : 'border-white/10',
           ]"
         >
           <div
-            class="flex items-center gap-2 tabular-nums"
+            class="flex items-center gap-1.5 tabular-nums"
             :class="[
-              narrowFill ? 'text-[12px]' : 'text-[15px] sm:text-[16px]',
+              narrowFill ? 'text-[10px] sm:text-[12px]' : 'text-[15px] sm:text-[16px]',
               themeLight ? 'text-slate-600' : 'text-[#C8C8CC]',
             ]"
           >
             <IconClock
               :class="[
-                narrowFill ? 'h-3.5 w-3.5' : 'h-5 w-5',
+                narrowFill ? 'h-3 w-3' : 'h-5 w-5',
                 'shrink-0 opacity-80',
                 themeLight ? 'text-slate-500' : 'text-[#B0B0B5]',
               ]"
@@ -337,13 +329,13 @@ const MetaCell = defineComponent({
   },
   setup(props, { slots }) {
     return () =>
-      h('div', { class: props.compact ? 'flex min-w-0 items-center gap-2' : 'flex min-w-0 items-center gap-3' }, [
+      h('div', { class: props.compact ? 'flex min-w-0 items-center gap-1.5' : 'flex min-w-0 items-center gap-3' }, [
         h(
           'span',
           {
             class: [
               'flex shrink-0 items-center justify-center border shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_2px_rgba(0,0,0,0.2)]',
-              props.compact ? 'h-8 w-8 rounded-xl' : 'h-11 w-11 rounded-2xl',
+              props.compact ? 'h-7 w-7 rounded-lg' : 'h-11 w-11 rounded-2xl',
               props.themeLight
                 ? 'border-slate-200/90 bg-white/60 text-slate-600'
                 : 'border-white/[0.12] bg-white/[0.07] text-[#B8B8BE]',
@@ -351,13 +343,13 @@ const MetaCell = defineComponent({
           },
           [slots.icon?.()],
         ),
-        h('div', { class: 'flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-0.5' }, [
+        h('div', { class: 'flex min-w-0 flex-1 flex-wrap items-center gap-x-1 gap-y-0.5' }, [
           h(
             'span',
             {
               class: [
                 'shrink-0 font-medium leading-tight',
-                props.compact ? 'text-[11px]' : 'text-[14px]',
+                props.compact ? 'text-[10px]' : 'text-[14px]',
                 labelTextClass(props.themeLight),
               ],
             },
@@ -368,7 +360,7 @@ const MetaCell = defineComponent({
             {
               class: [
                 'min-w-0 font-semibold leading-snug tracking-tight',
-                props.compact ? 'text-[13px]' : 'text-[17px] sm:text-[18px]',
+                props.compact ? 'text-[12px]' : 'text-[17px] sm:text-[18px]',
                 valueTextClass(props.themeLight),
               ],
             },

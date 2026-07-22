@@ -2,11 +2,12 @@
   <Teleport to="body">
     <Transition name="fade">
       <div v-if="visible" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="!isLoading && handleClose()">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-md" />
+        <div class="absolute inset-0 backdrop-blur-md" :class="themeLight ? 'bg-black/40' : 'bg-black/80'" />
         <div
-          class="relative w-full max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-gray-900/95 to-gray-800/95 shadow-2xl">
+          class="relative w-full max-w-3xl overflow-hidden rounded-3xl border shadow-2xl"
+          :class="themeLight ? 'border-slate-200 bg-white' : 'border-white/10 bg-gradient-to-br from-gray-900/95 to-gray-800/95'">
           <!-- 头部 -->
-          <div class="flex items-center justify-between border-b border-white/10 px-6 py-4">
+          <div class="flex items-center justify-between border-b px-6 py-4" :class="themeLight ? 'border-slate-200' : 'border-white/10'">
             <div class="flex items-center gap-3">
               <div
                 class="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600">
@@ -16,13 +17,14 @@
                   <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
               </div>
-              <span class="text-base font-semibold text-white">{{ cropTitle }}</span>
+              <span class="text-base font-semibold" :class="themeLight ? 'text-slate-800' : 'text-white'">{{ cropTitle }}</span>
             </div>
             <button type="button"
-              class="rounded-xl p-2 transition-all hover:bg-white/10 hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-transparent"
+              class="rounded-xl p-2 transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-transparent"
+              :class="themeLight ? 'hover:bg-slate-100' : 'hover:bg-white/10'"
               :disabled="isLoading"
               @click="handleClose">
-              <svg class="h-5 w-5 text-white/60 transition-colors hover:text-white" viewBox="0 0 24 24" fill="none"
+              <svg class="h-5 w-5 transition-colors" :class="themeLight ? 'text-slate-500 hover:text-slate-700' : 'text-white/60 hover:text-white'" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
@@ -34,13 +36,15 @@
           <div class="p-6">
             <!-- 上传区域 -->
             <div v-if="!imageSrc"
-              class="group relative flex h-64 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-white/20 bg-gradient-to-br from-white/5 to-transparent transition-all hover:border-blue-400/50 hover:bg-white/10 hover:shadow-lg hover:shadow-blue-500/10">
+              class="group relative flex h-64 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed transition-all hover:border-blue-400/50 hover:shadow-lg hover:shadow-blue-500/10"
+              :class="themeLight ? 'border-slate-300 bg-slate-50 hover:bg-slate-100' : 'border-white/20 bg-gradient-to-br from-white/5 to-transparent hover:bg-white/10'">
               <input type="file" accept="image/*" class="absolute inset-0 cursor-pointer opacity-0"
                 @change="handleFileSelect" />
               <div class="relative">
                 <div
                   class="absolute inset-0 blur-xl bg-gradient-to-r from-blue-500/30 to-purple-500/30 transition-opacity group-hover:opacity-100" />
-                <svg class="relative mb-4 h-14 w-14 text-white/60 transition-colors group-hover:text-white"
+                <svg class="relative mb-4 h-14 w-14 transition-colors"
+                  :class="themeLight ? 'text-slate-400 group-hover:text-blue-500' : 'text-white/60 group-hover:text-white'"
                   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="17 8 12 3 7 8" />
@@ -48,8 +52,9 @@
                 </svg>
               </div>
               <span
-                class="text-base font-medium text-white/80 transition-colors group-hover:text-white">点击或拖拽上传图片</span>
-              <span class="mt-2 text-xs text-white/40">支持 JPG、PNG 格式</span>
+                class="text-base font-medium transition-colors"
+                :class="themeLight ? 'text-slate-700 group-hover:text-blue-600' : 'text-white/80 group-hover:text-white'">点击或拖拽上传图片</span>
+              <span class="mt-2 text-xs" :class="themeLight ? 'text-slate-400' : 'text-white/40'">支持 JPG、PNG 格式</span>
             </div>
 
             <!-- 裁剪区域 -->
@@ -104,44 +109,53 @@
               <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-2 flex-shrink-0">
                   <button type="button"
-                    class="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/20 px-3 py-2 text-xs sm:text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white hover:shadow-lg hover:shadow-white/5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-white/70 disabled:hover:shadow-none"
+                    class="flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-xs sm:text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:shadow-none"
+                    :class="themeLight 
+                      ? 'border-slate-300 text-slate-600 hover:bg-slate-100 hover:text-slate-800 disabled:hover:text-slate-600' 
+                      : 'border-white/20 text-white/70 hover:bg-white/10 hover:text-white hover:shadow-lg hover:shadow-white/5 disabled:hover:text-white/70'"
                     :disabled="isLoading"
                     @click="rotate(-90)">
                     <svg t="1784640095854" class="icon" viewBox="0 0 1024 1024" version="1.1"
                       xmlns="http://www.w3.org/2000/svg" p-id="5399" width="15" height="15">
                       <path
                         d="M649.9356942 327.16885003l0 502.2110636 269.4506878 0L649.9356942 327.16885003zM619.97687786 829.37991363L619.97687786 563.46230215 110.99422865 829.37991363 619.97687786 829.37991363zM515.77290548 380.72798983l-117.25387097-26.67673299c0 0 83.05605935-185.14314867 297.66388221-84.17942806 0 0-167.36447056-211.73708887-414.91862441 57.54801335l-117.25387097-26.63402929 135.24606749 212.98421073L515.77290548 380.72798983z"
-                        p-id="5400" fill="#cdcdcd"></path>
+                        p-id="5400" :fill="themeLight ? '#6b7280' : '#cdcdcd'"></path>
                     </svg>
                     左旋转
                   </button>
                   <button type="button"
-                    class="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/20 px-3 py-2 text-xs sm:text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white hover:shadow-lg hover:shadow-white/5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-white/70 disabled:hover:shadow-none"
+                    class="flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-xs sm:text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:shadow-none"
+                    :class="themeLight 
+                      ? 'border-slate-300 text-slate-600 hover:bg-slate-100 hover:text-slate-800 disabled:hover:text-slate-600' 
+                      : 'border-white/20 text-white/70 hover:bg-white/10 hover:text-white hover:shadow-lg hover:shadow-white/5 disabled:hover:text-white/70'"
                     :disabled="isLoading"
                     @click="rotate(90)">
                     <svg t="1784640183464" class="icon" viewBox="0 0 1024 1024" version="1.1"
                       xmlns="http://www.w3.org/2000/svg" p-id="9003" width="15" height="15">
                       <path
                         d="M34.883997 883.639229l316.384787 0L351.268784 293.950845 34.883997 883.639229zM984.08543 883.639229 386.445958 571.402925l0 312.236304L984.08543 883.639229zM763.029802 513.054005l158.804842-250.082732L784.156982 294.244534C493.482763-21.945825 296.966017 226.672556 296.966017 226.672556c251.989151-118.550023 349.512279 98.842169 349.512279 98.842169l-137.677663 31.323403L763.029802 513.054005z"
-                        p-id="9004" fill="#dbdbdb"></path>
+                        p-id="9004" :fill="themeLight ? '#6b7280' : '#dbdbdb'"></path>
                     </svg>
                     右旋转
                   </button>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                   <button type="button"
-                    class="rounded-xl px-2.5 py-2 text-white/60 transition-all hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    class="rounded-xl px-2.5 py-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    :class="themeLight ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-700' : 'text-white/60 hover:bg-white/10 hover:text-white'"
                     :disabled="isLoading"
                     @click="scaleDown">
                     -
                   </button>
                   <div class="flex items-center gap-2 px-1">
-                    <span class="text-xs text-white/40 w-8">{{ Math.round(scale * 100) }}%</span>
+                    <span class="text-xs w-8" :class="themeLight ? 'text-slate-500' : 'text-white/40'">{{ Math.round(scale * 100) }}%</span>
                     <input type="range" v-model="scale" min="1" max="3" step="0.1" :disabled="isLoading"
-                      class="w-24 sm:w-32 md:w-40 h-2 rounded-full appearance-none bg-white/10 accent-blue-500 disabled:opacity-40 disabled:cursor-not-allowed" />
+                      class="w-24 sm:w-32 md:w-40 h-2 rounded-full appearance-none accent-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                      :class="themeLight ? 'bg-slate-200' : 'bg-white/10'" />
                   </div>
                   <button type="button"
-                    class="rounded-xl px-2.5 py-2 text-white/60 transition-all hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    class="rounded-xl px-2.5 py-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    :class="themeLight ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-700' : 'text-white/60 hover:bg-white/10 hover:text-white'"
                     :disabled="isLoading"
                     @click="scaleUp">
                     +
@@ -149,7 +163,10 @@
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                   <button type="button"
-                    class="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/20 px-3 py-2 text-xs sm:text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-white/70"
+                    class="flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-xs sm:text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    :class="themeLight 
+                      ? 'border-slate-300 text-slate-600 hover:bg-slate-100 hover:text-slate-800 disabled:hover:text-slate-600' 
+                      : 'border-white/20 text-white/70 hover:bg-white/10 hover:text-white disabled:hover:text-white/70'"
                     :disabled="isLoading"
                     @click="resetImage">
                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -185,7 +202,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onUnmounted, computed, nextTick } from 'vue'
+import { ref, watch, onUnmounted, computed, nextTick, inject, type Ref } from 'vue'
 
 const props = defineProps<{
   visible: boolean
@@ -201,6 +218,9 @@ const emit = defineEmits<{
 }>()
 
 const isLoading = computed(() => !!props.loading)
+
+const appThemeLight = inject<Ref<boolean> | undefined>('appThemeLight', undefined)
+const themeLight = computed(() => appThemeLight?.value === true)
 
 const imageSrc = ref('')
 const position = ref({ x: 0, y: 0 })

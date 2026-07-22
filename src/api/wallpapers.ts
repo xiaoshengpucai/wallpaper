@@ -20,6 +20,8 @@ export type WallpaperItem = {
   isFavorited?: boolean
   resolution?: string
   fileSizeLabel?: string
+  /** 设备类型：pc 或 mobile */
+  deviceType?: 'pc' | 'mobile'
 }
 
 type UnknownRecord = Record<string, unknown>
@@ -861,24 +863,21 @@ export async function reportWallpaperDownloaded(
 }
 
 /**
- * 收藏/取消收藏。`POST .../:id/favorite`；body 含 `favorited` / `favorite` / `action`（与 wallpaper-api 一致）。
- * 响应优先使用 `favorites` → favoriteCount、`isFavorited`。
+ * 收藏/取消收藏。`POST .../:id/favorite`；body 仅需 `favorited`。
+ * 直接更新壁纸收藏数，不返回 favoriteCount。
  */
 export async function reportWallpaperFavorite(
   id: string | number,
   favorited: boolean,
   kind: WallpaperDetailApiKind,
   signal?: AbortSignal,
-): Promise<WallpaperStatsPatch> {
+): Promise<void> {
   const base = wallpaperDetailPathPrefix(kind)
   const path = `${base}/${encodeURIComponent(String(id))}/favorite`
   const body = {
     favorited,
-    favorite: favorited,
-    action: favorited ? ('add' as const) : ('remove' as const),
   }
-  const { data } = await http.post<unknown>(path, body, { signal })
-  return parseWallpaperStatsPatch(data)
+  await http.post<unknown>(path, body, { signal })
 }
 
 // ---- 用户收藏集合 API（POST /api/v1/auth/collections） ----
@@ -889,6 +888,7 @@ export type CollectionItem = {
   wallpaperId?: string
   title?: string
   deviceType?: 'pc' | 'mobile'
+  createdAt?: string
 }
 
 /** POST /api/v1/auth/collections 的响应 */

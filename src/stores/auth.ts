@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 
 import { authApi } from '../api/auth'
-import { toggleWallpaperCollection, type CollectionItem } from '../api/wallpapers'
+import { toggleWallpaperCollection, reportWallpaperFavorite, type CollectionItem } from '../api/wallpapers'
 import { tokenStorage } from '../utils/tokenStorage'
 
 type WallpaperCollection = {
@@ -208,8 +208,8 @@ export const useAuthStore = defineStore('auth', {
     },
 
     /**
-     * 收藏/取消收藏壁纸，同步更新本地 user.collections。
-     * @returns `{ collected }` — true=已收藏，false=已取消
+     * 收藏/取消收藏壁纸，同步更新本地 user.collections 和壁纸收藏总数。
+     * @returns `{ collected, stats }` — true=已收藏，false=已取消
      */
     async toggleCollection(payload: {
       url: string
@@ -223,6 +223,20 @@ export const useAuthStore = defineStore('auth', {
         this.user.favorites = res.collections.length
         this.saveUser(this.user)
       }
+
+      if (payload.wallpaperId && payload.deviceType) {
+        const normalizedDeviceType = payload.deviceType.toLowerCase() === 'mobile' ? 'mobile' : 'pc'
+        try {
+          await reportWallpaperFavorite(
+            payload.wallpaperId,
+            res.collected,
+            normalizedDeviceType,
+          )
+        } catch (error) {
+          console.error('[toggleCollection] 更新壁纸收藏总数失败:', error)
+        }
+      }
+
       return { collected: res.collected }
     },
 

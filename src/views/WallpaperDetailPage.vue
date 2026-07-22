@@ -42,9 +42,12 @@
     <!-- 相似推荐区域 -->
     <div v-if="!isNarrowViewport && previewKind !== 'mobile'" class="mt-20 flex w-full justify-center px-3 sm:px-5">
       <div class="w-full max-w-[1800px]">
-        <h2 class="mb-8 flex items-center justify-center gap-3 text-center text-2xl font-semibold tracking-tight"
-          :class="themeLight ? 'text-slate-800' : 'text-white/90'">
-          <svg class="h-7 w-7" viewBox="0 0 1289 1024" xmlns="http://www.w3.org/2000/svg"
+        <h2 class="mb-6 flex items-center justify-center gap-2 text-center font-semibold tracking-tight"
+          :class="[
+            'text-lg sm:text-xl md:text-2xl',
+            themeLight ? 'text-slate-800' : 'text-white/90'
+          ]">
+          <svg class="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" viewBox="0 0 1289 1024" xmlns="http://www.w3.org/2000/svg"
             :style="{ fill: themeLight ? '#1e293b' : 'rgba(255, 255, 255, 0.9)' }">
             <path
               d="M1268.87 308.69l-76.116 507.479a141.993 141.993 0 0 1-97.317 115.028 136.342 136.342 0 0 1-62.008 4.55L224.784 809.04c-55.41-8.685-98.227-49.53-113.018-101.185l127.05-89.314 196.568 155.645L706.74 446.7l408.456 299.117v-401.25c0-78.885-62.577-142.827-139.755-142.827H174.457l9.481-63.032C195.543 60.733 266.881 7.22 343.225 19.167l808.645 126.67c76.306 11.947 128.68 84.84 117 162.852z"
@@ -149,7 +152,7 @@
       </template>
     </div>
 
-    <div v-if="previewKind === 'mobile'" class="mt-8 w-full pb-2 sm:mt-10 sm:pb-4">
+    <div v-if="isNarrowViewport" class="mt-8 w-full pb-2 sm:mt-10 sm:pb-4">
       <div class="mx-auto w-full max-w-[1600px] px-0.5 pt-4 sm:px-0 sm:pt-6">
         <h2
           class="mb-8 flex items-center justify-center gap-3 text-center text-xl font-semibold tracking-tight sm:mb-6 sm:text-2xl"
@@ -168,7 +171,7 @@
             <path
               d="M975.441 1018.273H157.352C70.58 1018.273 0 946.405 0 858.001v-83.816c0-5.688 2.769-10.998 7.395-14.222L228.69 604.318a17.635 17.635 0 0 1 21.049 0.606l183.066 144.913 260.32-314.212a17.597 17.597 0 0 1 23.968-2.958l408.533 299.118a17.408 17.408 0 0 1 7.13 14.032v112.184c0 28.785-7.585 57.077-22.11 81.956a159.666 159.666 0 0 1-56.206 56.699 155.082 155.082 0 0 1-78.961 21.617zM35.12 783.173v74.828c0 69.175 54.84 125.38 122.233 125.38h818.165c43.31 0 82.526-22.792 104.864-60.983a127.895 127.895 0 0 0 17.332-64.473V754.654l-387.977-284.1-260.813 314.668a17.597 17.597 0 0 1-24.462 2.579L238.247 640.27 35.081 783.174z" />
           </svg>
-          <span style="font-size: 28px;">相似推荐</span>
+          <span class="text-lg sm:text-xl">相似推荐</span>
         </h2>
 
         <WallpaperMasonry v-if="recommendations.length > 0" class="w-full" measure-wrap-class="max-w-none px-0"
@@ -579,7 +582,6 @@ async function onToggleFavorite() {
       deviceType: previewKind.value,
     })
     liveFavorited.value = collected
-    // 本地 ±1 更新收藏计数
     liveFavoriteCount.value = Math.max(0, liveFavoriteCount.value + (collected ? 1 : -1))
     persistDetailStats()
   } catch (e) {
@@ -826,11 +828,12 @@ function scoreRecommendation(item: WallpaperItem, keywords: string[]): number {
 }
 
 function onRecommendTileClick(item: WallpaperItem) {
-  cacheWallpaperForDetail({ ...item, kind: 'mobile' })
+  const kind = item.deviceType === 'pc' ? 'pc' : 'mobile'
+  cacheWallpaperForDetail({ ...item, kind })
   router.push({
     name: ROUTE_NAME_WALLPAPER_DETAIL,
     params: { id: String(item.id) },
-    query: { kind: 'mobile' },
+    query: { kind },
   })
 }
 
@@ -883,8 +886,10 @@ async function loadRecommendations() {
     const existingIds = new Set(recommendations.value.map(item => String(item.id)))
     existingIds.add(String(wallpaperId.value))
 
+    const currentDeviceType: 'pc' | 'mobile' = previewKind.value === 'mobile' ? 'mobile' : 'pc'
     const newItems = result.items
       .filter(item => !existingIds.has(String(item.id)))
+      .map(item => ({ ...item, deviceType: currentDeviceType }))
       .sort((a, b) => scoreRecommendation(b, recommendKeywords.value) - scoreRecommendation(a, recommendKeywords.value))
 
 
@@ -1007,7 +1012,6 @@ onBeforeUnmount(() => {
 
 @media (max-width: 899px) {
   .detail-mobile-preview-shell {
-    width: min(100%, 390px);
     padding: 12px 8px;
   }
 

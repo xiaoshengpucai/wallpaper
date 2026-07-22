@@ -745,77 +745,77 @@ li a {
 
 @media (max-width: 899px) {
   .theme-switch {
-    width: 72px;
-    height: 28px;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    width: 40px;
+    height: 17px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   }
 
   .theme-switch--dark {
-    box-shadow: 0 3px 12px rgba(30, 10, 90, 0.38);
+    box-shadow: 0 2px 8px rgba(30, 10, 90, 0.3);
   }
 
   .theme-switch__stars {
-    left: 5px;
-    width: 32px;
-    height: 20px;
+    left: 3px;
+    width: 22px;
+    height: 14px;
   }
 
   .theme-switch__clouds {
-    right: 7px;
-    width: 26px;
-    height: 17px;
+    right: 4px;
+    width: 17px;
+    height: 11px;
   }
 
   .theme-switch__cloud--a {
-    width: 9px;
-    height: 9px;
+    width: 6px;
+    height: 6px;
     right: 1px;
     top: 1px;
   }
 
   .theme-switch__cloud--b {
-    width: 5px;
-    height: 5px;
-    right: 12px;
-    top: 8px;
+    width: 3px;
+    height: 3px;
+    right: 8px;
+    top: 5px;
   }
 
   .theme-switch__knob {
-    left: 3px;
-    width: 22px;
-    height: 22px;
-    margin-top: -11px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    margin-top: -7px;
     box-shadow:
-      0 2px 8px rgba(0, 0, 0, 0.16),
-      0 1px 2px rgba(0, 0, 0, 0.1);
+      0 1px 5px rgba(0, 0, 0, 0.12),
+      0 1px 1px rgba(0, 0, 0, 0.08);
   }
 
   .theme-switch--dark .theme-switch__knob {
-    left: calc(100% - 22px - 3px);
+    left: calc(100% - 14px - 2px);
     box-shadow:
-      0 3px 9px rgba(0, 0, 0, 0.24),
-      0 1px 2px rgba(0, 0, 0, 0.12);
+      0 2px 6px rgba(0, 0, 0, 0.18),
+      0 1px 1px rgba(0, 0, 0, 0.08);
   }
 
   .theme-switch__crater--1 {
-    width: 4px;
-    height: 4px;
-    left: 4px;
-    top: 7px;
+    width: 2px;
+    height: 2px;
+    left: 3px;
+    top: 5px;
   }
 
   .theme-switch__crater--2 {
-    width: 3px;
-    height: 3px;
-    left: 11px;
-    top: 12px;
+    width: 2px;
+    height: 2px;
+    left: 7px;
+    top: 8px;
   }
 
   .theme-switch__crater--3 {
-    width: 3px;
-    height: 3px;
-    left: 8px;
-    top: 4px;
+    width: 2px;
+    height: 2px;
+    left: 5px;
+    top: 3px;
   }
 }
 </style>
