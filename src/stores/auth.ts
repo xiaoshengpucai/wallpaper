@@ -72,22 +72,18 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     hydrate() {
       const token = tokenStorage.get()
-      console.log('[auth] hydrate - token exists:', !!token)
       if (token) {
         this.token = token
       } else {
         this.token = null
         this.user = null
-        console.log('[auth] hydrate - no token, clearing user')
         return
       }
       
       try {
         const userStr = localStorage.getItem(USER_KEY)
-        console.log('[auth] hydrate - userStr exists:', !!userStr)
         if (userStr) {
           const parsed = JSON.parse(userStr) as Record<string, unknown>
-          console.log('[auth] hydrate - parsed user has id:', 'id' in parsed, 'has nickname:', 'nickname' in parsed)
           if (parsed && typeof parsed === 'object' && 'id' in parsed && 'nickname' in parsed) {
             const normalized: AuthUser = parsed as AuthUser
             if (!('collections' in parsed)) {
@@ -100,15 +96,12 @@ export const useAuthStore = defineStore('auth', {
               normalized.downloads = 0
             }
             this.user = normalized
-            console.log('[auth] hydrate - user restored:', normalized.nickname)
           } else {
             this.user = null
-            console.log('[auth] hydrate - user missing id/nickname')
           }
         }
       } catch (err) {
         this.user = null
-        console.log('[auth] hydrate - parse error:', err)
       }
     },
     saveUser(user: AuthUser) {
@@ -163,18 +156,10 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.lastError = null
       try {
-        console.log('[auth] getCurrentUser - calling API...')
         const user = await authApi.getCurrentUser()
-        console.log('[auth] getCurrentUser - API response:', user && typeof user === 'object' ? user.nickname : user)
-        if (user && typeof user === 'object' && 'id' in user && 'nickname' in user) {       this.saveUser(user)
-          console.log('[auth] getCurrentUser - user saved:', user.nickname)
-        } else {
-          console.log('[auth] getCurrentUser - invalid user data, not saving')
-        }
         return user
       } catch (e) {
         this.lastError = e instanceof Error ? e.message : '获取用户信息失败'
-        console.log('[auth] getCurrentUser - error:', e instanceof Error ? e.message : e)
         throw e
       } finally {
         this.loading = false
